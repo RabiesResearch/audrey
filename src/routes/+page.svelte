@@ -1,7 +1,7 @@
 <script lang="ts">
-  //   import TanzaniaMap from "$lib/components/visualizations/TanzaniaMap.svelte";
-  //   import CasesBarChart from "$lib/components/visualizations/CasesBarChart.svelte";
-  import HealthFacilitiesTable from "$lib/components/tables/HealthFacilitiesTable.svelte";
+  //   import TanzaniaMap from "$lib/components/charts/stock-cases-chloropleth-map.svelte";
+  //   import CasesBarChart from "$lib/components/charts/cases-stock-bar-chart.svelte";
+  import HealthFacilitiesTable from "$components/tables/health-facilities-table.svelte";
   import { onMount } from "svelte";
   import toast from "svelte-hot-french-toast";
 
@@ -69,7 +69,9 @@
     <div
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     >
-      <div class="relative w-full max-w-[95vw] md:mac-w-[80vw] rounded-lg bg-white p-6 shadow-lg max-h-[100vh] md:max-h-[80vh] overflow-y-auto">
+      <div
+        class="md:mac-w-[80vw] relative max-h-[100vh] w-full max-w-[95vw] overflow-y-auto rounded-lg bg-white p-6 shadow-lg md:max-h-[80vh]"
+      >
         <button
           class="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
           on:click={() => (showDataTableModal = false)}
