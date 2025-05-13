@@ -69,7 +69,7 @@
     <div
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     >
-      <div class="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-lg max-h-[100vh] md:max-h-[80vh] overflow-y-auto">
+      <div class="relative w-full max-w-[95vw] md:mac-w-[80vw] rounded-lg bg-white p-6 shadow-lg max-h-[100vh] md:max-h-[80vh] overflow-y-auto">
         <button
           class="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
           on:click={() => (showDataTableModal = false)}
@@ -78,7 +78,6 @@
           &times;
         </button>
         <h2 class="mb-4 text-lg font-semibold">Detailed Data</h2>
-        <p>Here goes the region data table</p>
         <HealthFacilitiesTable {selectedRegion} />
       </div>
     </div>
