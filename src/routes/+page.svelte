@@ -1,12 +1,15 @@
 <script lang="ts">
-  import TanzaniaMap from "$lib/components/visualizations/TanzaniaMap.svelte";
-  import CasesBarChart from "$lib/components/visualizations/CasesBarChart.svelte";
-  import RegionDataTable from "$lib/components/tables/RegionDataTable.svelte";
+  //   import TanzaniaMap from "$lib/components/visualizations/TanzaniaMap.svelte";
+  //   import CasesBarChart from "$lib/components/visualizations/CasesBarChart.svelte";
+  import HealthFacilitiesTable from "$lib/components/tables/HealthFacilitiesTable.svelte";
   import { onMount } from "svelte";
   import toast from "svelte-hot-french-toast";
 
   // State for selected region/district
   let selectedRegion: string;
+
+  // Modal state
+  let showDataTableModal = false;
 
   // Handle region selection from either visualization
   function handleRegionSelect(region: string) {
@@ -18,7 +21,7 @@
     // Example notification
     setTimeout(() => {
       toast.warning("Vaccine stocks are running low in Arusha region", {
-        duration: 5000,
+        duration: 10000,
       });
     }, 3000);
   });
@@ -35,25 +38,49 @@
     <!-- Map visualization -->
     <div class="h-[500px] rounded-lg bg-white p-4 shadow-md">
       <h2 class="mb-2 text-lg font-semibold">Geographic Distribution</h2>
-      <TanzaniaMap
+      <p>Here goes the Tanzania map visualization</p>
+      <!-- <TanzaniaMap
         {selectedRegion}
         on:regionSelect={(e) => handleRegionSelect(e.detail)}
-      />
+      /> -->
     </div>
 
     <!-- Bar chart visualization -->
     <div class="h-[500px] rounded-lg bg-white p-4 shadow-md">
       <h2 class="mb-2 text-lg font-semibold">Cases and Vaccine Stock</h2>
-      <CasesBarChart
+      <p>Here goes the cases and vaccine stock bar chart</p>
+      <!-- <CasesBarChart
         {selectedRegion}
         on:regionSelect={(e) => handleRegionSelect(e.detail)}
-      />
+      /> -->
     </div>
   </div>
 
-  <!-- Data Table -->
-  <div class="mb-8 rounded-lg bg-white p-4 shadow-md">
-    <h2 class="mb-4 text-lg font-semibold">Detailed Data</h2>
-    <RegionDataTable {selectedRegion} />
-  </div>
+  <!-- Button to open modal -->
+  <button
+    class="mb-4 rounded bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+    on:click={() => (showDataTableModal = true)}
+  >
+    View Detailed Data
+  </button>
+
+  <!-- Data Table Modal -->
+  {#if showDataTableModal}
+    <div
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+    >
+      <div class="relative w-full max-w-2xl rounded-lg bg-white p-6 shadow-lg max-h-[100vh] md:max-h-[80vh] overflow-y-auto">
+        <button
+          class="absolute right-4 top-4 text-gray-500 hover:text-gray-700"
+          on:click={() => (showDataTableModal = false)}
+          aria-label="Close"
+        >
+          &times;
+        </button>
+        <h2 class="mb-4 text-lg font-semibold">Detailed Data</h2>
+        <p>Here goes the region data table</p>
+        <HealthFacilitiesTable {selectedRegion} />
+      </div>
+    </div>
+  {/if}
 </div>
