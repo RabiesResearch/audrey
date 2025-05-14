@@ -48,7 +48,15 @@
       );
 
       if (!node) {
-        node = { ...key, uniquePatients: 0, vaccineVialStock: 0, children: [] };
+        node = {
+          id: key.id,
+          regionName: key.regionName ?? '',
+          districtName: key.districtName ?? null,
+          facilityName: key.facilityName ?? null,
+          uniquePatients: 0,
+          vaccineVialStock: 0,
+          children: [] as FacilityInfoWithChildren[],
+        };
         parent.push(node);
       }
 
@@ -67,7 +75,7 @@
       // Find or create the district node under the region
       const districtNode = getOrCreateNode(regionNode.children!, {
         id: null,
-        regionName: null,
+        regionName: entry.regionName, // <-- ensure regionName is set here
         districtName: entry.districtName,
         facilityName: null,
       });
@@ -142,6 +150,13 @@
       collapsed[0].children = collapsed[0].children?.filter(
         (d) => d.districtName === $selectedDistrict
       );
+      // Auto-expand the region and the district if present
+      expandedState = { '0': true };
+      if (collapsed[0].children && collapsed[0].children.length > 0) {
+        expandedState['0.0'] = true;
+      }
+    } else if (collapsed.length === 1) {
+      expandedState = { '0': true };
     }
     data = collapsed;
   })();
@@ -152,8 +167,8 @@
     state: {
       expanded: expandedState,
     },
-    getSubRows: (row) => row.children,
-    onExpandedChange(updater) {
+    getSubRows: (row: FacilityInfoWithChildren) => row.children,
+    onExpandedChange(updater: any) {
       if (updater instanceof Function) {
         expandedState = updater(expandedState);
       } else {
