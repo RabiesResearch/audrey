@@ -6,6 +6,14 @@
 
   let data: RegionCasesStockData[] = [];
   let chartContainer: HTMLDivElement;
+  let resizeObserver: ResizeObserver;
+
+  function getChartDimensions() {
+    const width = chartContainer?.clientWidth || 600;
+    // Responsive height: 60% of width, min 250, max 500
+    const height = Math.max(250, Math.min(0.6 * width, 500));
+    return { width, height };
+  }
 
   // Subscribe to stores and refetch/redraw on change
   let unsubscribeRegion: () => void;
@@ -29,9 +37,13 @@
     });
     // Initial fetch
     fetchAndDraw(currentRegion, currentDistrict);
+    // Responsive: redraw on resize
+    resizeObserver = new ResizeObserver(() => drawChart());
+    if (chartContainer) resizeObserver.observe(chartContainer);
     return () => {
       unsubscribeRegion();
       unsubscribeDistrict();
+      if (resizeObserver && chartContainer) resizeObserver.unobserve(chartContainer);
     };
   });
 
@@ -52,14 +64,15 @@
     if (!data.length) return;
 
     const margin = { top: 40, right: 60, bottom: 80, left: 60 };
-    const width = chartContainer.clientWidth - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
+    const { width, height } = getChartDimensions();
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
 
     const svg = d3
       .select(chartContainer)
       .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
+      .attr("width", width)
+      .attr("height", height)
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -75,11 +88,11 @@
     const x = d3
       .scaleBand()
       .domain(xLabels)
-      .range([0, width])
+      .range([0, innerWidth])
       .padding(0.2);
     svg
       .append("g")
-      .attr("transform", `translate(0,${height})`)
+      .attr("transform", `translate(0,${innerHeight})`)
       .call(d3.axisBottom(x))
       .selectAll("text")
       .attr("transform", "rotate(45)")
@@ -89,17 +102,17 @@
     const yLeft = d3
       .scaleLinear()
       .domain([0, d3.max(data, (d) => d.uniquePatients) || 1])
-      .range([height, 0]);
+      .range([innerHeight, 0]);
     svg.append("g").call(d3.axisLeft(yLeft));
 
     // Y axis for vaccine stock (right)
     const yRight = d3
       .scaleLinear()
       .domain([0, d3.max(data, (d) => d.vaccineStock) || 1])
-      .range([height, 0]);
+      .range([innerHeight, 0]);
     svg
       .append("g")
-      .attr("transform", `translate(${width},0)`)
+      .attr("transform", `translate(${innerWidth},0)`)
       .call(d3.axisRight(yRight));
 
     // Tooltip event handlers
@@ -145,7 +158,7 @@
       .attr("x", (d) => x(d.facilityName || d.districtName || d.regionName)!)
       .attr("y", (d) => yLeft(d.uniquePatients))
       .attr("width", x.bandwidth() / 2)
-      .attr("height", (d) => height - yLeft(d.uniquePatients))
+      .attr("height", (d) => innerHeight - yLeft(d.uniquePatients))
       .attr("fill", "#2563eb")
       .on("mousemove", function(event, d) { showTooltip(event, d, 'patients'); })
       .on("mouseleave", hideTooltip)
@@ -161,7 +174,7 @@
       .attr("x", (d) => x(d.facilityName || d.districtName || d.regionName)! + x.bandwidth() / 2)
       .attr("y", (d) => yRight(d.vaccineStock))
       .attr("width", x.bandwidth() / 2)
-      .attr("height", (d) => height - yRight(d.vaccineStock))
+      .attr("height", (d) => innerHeight - yRight(d.vaccineStock))
       .attr("fill", "#fbbf24")
       .on("mousemove", function(event, d) { showTooltip(event, d, 'stock'); })
       .on("mouseleave", hideTooltip)
@@ -172,7 +185,7 @@
       .append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", -margin.left + 15)
-      .attr("x", -height / 2)
+      .attr("x", -innerHeight / 2)
       .attr("text-anchor", "middle")
       .attr("fill", "#334155")
       .style("font-size", "14px")
@@ -182,8 +195,8 @@
     svg
       .append("text")
       .attr("transform", "rotate(-90)")
-      .attr("y", width + margin.right - 10)
-      .attr("x", -height / 2)
+      .attr("y", innerWidth + margin.right - 10)
+      .attr("x", -innerHeight / 2)
       .attr("text-anchor", "middle")
       .attr("fill", "#b45309")
       .style("font-size", "14px")
@@ -192,7 +205,7 @@
     // Add legend background box (make it wider and taller to fit text)
     svg
       .append("rect")
-      .attr("x", width - 140)
+      .attr("x", innerWidth - 140)
       .attr("y", -40)
       .attr("width", 135)
       .attr("height", 54)
@@ -204,7 +217,7 @@
     // Add legend items (squares and text)
     svg
       .append("rect")
-      .attr("x", width - 125)
+      .attr("x", innerWidth - 125)
       .attr("y", -30)
       .attr("width", 16)
       .attr("height", 16)
@@ -213,7 +226,7 @@
       .attr("stroke-width", 1);
     svg
       .append("text")
-      .attr("x", width - 105)
+      .attr("x", innerWidth - 105)
       .attr("y", -20)
       .attr("alignment-baseline", "middle")
       .attr("fill", "#334155")
@@ -221,7 +234,7 @@
       .text("Unique Patients");
     svg
       .append("rect")
-      .attr("x", width - 125)
+      .attr("x", innerWidth - 125)
       .attr("y", -10)
       .attr("width", 16)
       .attr("height", 16)
@@ -230,7 +243,7 @@
       .attr("stroke-width", 1);
     svg
       .append("text")
-      .attr("x", width - 105)
+      .attr("x", innerWidth - 105)
       .attr("y", 0)
       .attr("alignment-baseline", "middle")
       .attr("fill", "#334155")
@@ -252,4 +265,4 @@
   }
 </script>
 
-<div class="h-[400px] w-full" bind:this={chartContainer}></div>
+<div class="h-[min(60vw,500px)] min-h-[250px] w-full relative" bind:this={chartContainer}></div>
