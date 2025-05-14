@@ -1,6 +1,6 @@
 <script lang="ts">
   //   import TanzaniaMap from "$lib/components/charts/stock-cases-chloropleth-map.svelte";
-  //   import CasesBarChart from "$lib/components/charts/cases-stock-bar-chart.svelte";
+  import CasesBarChart from "$lib/components/charts/cases-stock-bar-chart.svelte";
   import HealthFacilitiesTable from "$components/tables/health-facilities-table.svelte";
   import { onMount } from "svelte";
   import toast from "svelte-hot-french-toast";
@@ -49,10 +49,10 @@
     <div class="h-[500px] rounded-lg bg-white p-4 shadow-md">
       <h2 class="mb-2 text-lg font-semibold">Cases and Vaccine Stock</h2>
       <p>Here goes the cases and vaccine stock bar chart</p>
-      <!-- <CasesBarChart
+      <CasesBarChart
         {selectedRegion}
         on:regionSelect={(e) => handleRegionSelect(e.detail)}
-      /> -->
+      />
     </div>
   </div>
 
