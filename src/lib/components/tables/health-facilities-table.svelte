@@ -35,7 +35,7 @@
       parent: FacilityInfoWithChildren[],
       key: {
         id: string | null;
-        regionName: string;
+        regionName: string | null;
         districtName: string | null;
         facilityName: string | null;
       },
@@ -67,7 +67,7 @@
       // Find or create the district node under the region
       const districtNode = getOrCreateNode(regionNode.children!, {
         id: null,
-        regionName: entry.regionName,
+        regionName: null,
         districtName: entry.districtName,
         facilityName: null,
       });
@@ -75,8 +75,8 @@
       // Find or create the facility node under the district
       const facilityNode = getOrCreateNode(districtNode.children!, {
         id: entry.id,
-        regionName: entry.regionName,
-        districtName: entry.districtName,
+        regionName: null,
+        districtName: null,
         facilityName: entry.facilityName,
       });
 
