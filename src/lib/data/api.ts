@@ -24,6 +24,7 @@ export type FacilityInfo = {
 export type RegionCasesStockData = {
   regionName: string;
   districtName?: string;
+  facilityName?: string;
   uniquePatients: number;
   vaccineStock: number;
 };
@@ -107,7 +108,7 @@ export async function getFacilitiesByRegionDistrict(
 
 /**
  * Get the total number of patients seen and total vaccine vials in stock
- * Returns an array of RegionCasesStockData objects, always grouped by region or district as appropriate.
+ * Returns an array of RegionCasesStockData objects, always grouped by region, district, or facility as appropriate.
  */
 export async function getPatientAndStockNumbers(
   regionName: string | null,
@@ -161,26 +162,39 @@ export async function getPatientAndStockNumbers(
       };
     });
   } else if (regionName && districtName) {
-    // Just the district
-    const districtRows = rows.filter(
-      (row) =>
-        row.region_name === regionName &&
-        row.district_council_name === districtName,
+    // Group by facility within the district
+    const facilities = Array.from(
+      new Set(
+        rows
+          .filter(
+            (r) =>
+              r.region_name === regionName &&
+              r.district_council_name === districtName,
+          )
+          .map((r) => r.facility_name),
+      ),
     );
-    let uniquePatients = 0;
-    let vaccineStock = 0;
-    for (const row of districtRows) {
-      uniquePatients += Number(row["tally-total_patients"] ?? 0);
-      vaccineStock += Number(row["tally-total_vials"] ?? 0);
-    }
-    return [
-      {
+    return facilities.map((facility) => {
+      const facilityRows = rows.filter(
+        (row) =>
+          row.region_name === regionName &&
+          row.district_council_name === districtName &&
+          row.facility_name === facility,
+      );
+      let uniquePatients = 0;
+      let vaccineStock = 0;
+      for (const row of facilityRows) {
+        uniquePatients += Number(row["tally-total_patients"] ?? 0);
+        vaccineStock += Number(row["tally-total_vials"] ?? 0);
+      }
+      return {
         regionName: regionName as string,
         districtName: districtName as string,
+        facilityName: facility as string,
         uniquePatients,
         vaccineStock,
-      },
-    ];
+      };
+    });
   }
   return [];
 }

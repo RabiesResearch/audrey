@@ -70,10 +70,11 @@
       .style("opacity", 0)
       .style("position", "absolute");
 
-    // X axis
+    // X axis: use facilityName if present, else districtName, else regionName
+    const xLabels = data.map((d) => d.facilityName || d.districtName || d.regionName);
     const x = d3
       .scaleBand()
-      .domain(data.map((d) => d.districtName || d.regionName))
+      .domain(xLabels)
       .range([0, width])
       .padding(0.2);
     svg
@@ -107,11 +108,16 @@
       if (d.districtName) {
         label += `, ${d.districtName}`;
       }
+      if (d.facilityName) {
+        label += `, ${d.facilityName}`;
+      }
       let value = type === 'patients' ? d.uniquePatients : d.vaccineStock;
       let valueLabel = type === 'patients' ? 'Unique Patients' : 'Vaccine Vials';
       let regionNote = '';
       if (!d.districtName) {
         regionNote = '<div class="text-xs text-gray-500">(Sum across all districts in this region)</div>';
+      } else if (!d.facilityName) {
+        regionNote = '<div class="text-xs text-gray-500">(Sum across all facilities in this district)</div>';
       }
       tooltip
         .html(
@@ -136,7 +142,7 @@
       .enter()
       .append("rect")
       .attr("class", "patients")
-      .attr("x", (d) => x(d.districtName || d.regionName)!)
+      .attr("x", (d) => x(d.facilityName || d.districtName || d.regionName)!)
       .attr("y", (d) => yLeft(d.uniquePatients))
       .attr("width", x.bandwidth() / 2)
       .attr("height", (d) => height - yLeft(d.uniquePatients))
@@ -152,7 +158,7 @@
       .enter()
       .append("rect")
       .attr("class", "stock")
-      .attr("x", (d) => x(d.districtName || d.regionName)! + x.bandwidth() / 2)
+      .attr("x", (d) => x(d.facilityName || d.districtName || d.regionName)! + x.bandwidth() / 2)
       .attr("y", (d) => yRight(d.vaccineStock))
       .attr("width", x.bandwidth() / 2)
       .attr("height", (d) => height - yRight(d.vaccineStock))
