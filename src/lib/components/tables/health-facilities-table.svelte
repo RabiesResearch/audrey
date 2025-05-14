@@ -128,25 +128,29 @@
   let expandedState: ExpandedState = {};
 
   $: (async () => {
-    const facilities = await getFacilitiesByRegionDistrict(
-      $selectedRegion,
-      $selectedDistrict,
-    );
-    const dataWithNulls: Array<FacilityInfo | null> = await Promise.all(
-      facilities.map(async (id) => await getFacilityInfoById(id)),
-    );
-    data = collapseFacilityInfo(
+    // Always fetch all facilities for the selected region (not just the district)
+    const facilities = await getFacilitiesByRegionDistrict($selectedRegion, null);
+    const dataWithNulls: Array<FacilityInfo | null> = [];
+    for (const id of facilities) {
+      dataWithNulls.push(await getFacilityInfoById(id));
+    }
+    let collapsed = collapseFacilityInfo(
       dataWithNulls.filter((facility) => facility !== null),
     );
+    // If a district is selected, filter the region's children to only that district
+    if ($selectedDistrict && collapsed.length > 0) {
+      collapsed[0].children = collapsed[0].children?.filter(
+        (d) => d.districtName === $selectedDistrict
+      );
+    }
+    data = collapsed;
   })();
 
   $: options = {
     data,
     columns,
     state: {
-      get expanded() {
-        return expandedState;
-      },
+      expanded: expandedState,
     },
     getSubRows: (row) => row.children,
     onExpandedChange(updater) {
