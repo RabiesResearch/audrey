@@ -26,7 +26,7 @@
     children?: FacilityInfoWithChildren[];
   };
 
-  export function collapseFacilityInfo(
+  function collapseFacilityInfo(
     data: FacilityInfo[],
   ): FacilityInfoWithChildren[] {
     const result: FacilityInfoWithChildren[] = [];
