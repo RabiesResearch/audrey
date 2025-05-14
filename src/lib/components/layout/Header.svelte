@@ -11,9 +11,15 @@
   // Toggle sidebar
   const toggleSidebar = (): boolean => ($sidebarOpen = !$sidebarOpen);
 
-  let searchTerm = "";
   let showDropdown = false;
   let filteredResults: { region: string; district: string }[] = [];
+
+  let searchTerm = "";
+  $: searchTerm = $selectedRegion && $selectedDistrict
+    ? `${$selectedRegion} > ${$selectedDistrict}`
+    : $selectedRegion
+      ? $selectedRegion
+      : "";
 
   // Fetch regions/districts if not already loaded
   onMount(() => {
@@ -60,14 +66,12 @@
     $selectedRegion = region;
     $selectedDistrict = district;
     showDropdown = false;
-    searchTerm = `${region} > ${district}`;
   };
 
   const clearLocation = (): void => {
     $selectedRegion = null;
     $selectedDistrict = null;
     showDropdown = false;
-    searchTerm = "";
   };
 </script>
 
