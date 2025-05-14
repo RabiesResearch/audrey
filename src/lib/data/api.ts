@@ -198,3 +198,29 @@ export async function getPatientAndStockNumbers(
   }
   return [];
 }
+
+let allRegionsAndDistrictsCache: { region: string; district: string }[] | null =
+  null;
+
+export async function getAllRegionsAndDistricts(): Promise<
+  { region: string; district: string }[]
+> {
+  if (allRegionsAndDistrictsCache) return allRegionsAndDistrictsCache;
+  // Use fetchMonthlyData (which uses PapaParse) and extract unique region/district pairs
+  const rows = await fetchMonthlyData();
+  const seen = new Set<string>();
+  const result: { region: string; district: string }[] = [];
+  for (const row of rows) {
+    const region = row.region_name?.trim();
+    const district = row.district_council_name?.trim();
+    if (region && district) {
+      const key = region + "|" + district;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push({ region, district });
+      }
+    }
+  }
+  allRegionsAndDistrictsCache = result;
+  return result;
+}

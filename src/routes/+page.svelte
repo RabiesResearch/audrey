@@ -4,6 +4,8 @@
   import HealthFacilitiesTable from "$components/tables/health-facilities-table.svelte";
   import { onMount } from "svelte";
   import toast from "svelte-hot-french-toast";
+  import { allRegionsAndDistricts } from "$lib/stores/uiStore";
+  import { getAllRegionsAndDistricts } from "$lib/data/api";
 
   // State for selected region/district
   let selectedRegion: string;
@@ -25,6 +27,7 @@
       });
     }, 3000);
   });
+
 </script>
 
 <svelte:head>
@@ -40,10 +43,7 @@
       <div class="h-full rounded-lg bg-white p-4 shadow-md flex flex-col">
         <h2 class="mb-2 text-lg font-semibold">Geographic Distribution</h2>
         <p>Here goes the Tanzania map visualization</p>
-        <!-- <TanzaniaMap
-        {selectedRegion}
-        on:regionSelect={(e) => handleRegionSelect(e.detail)}
-      /> -->
+        <!-- <TanzaniaMap /> -->
       </div>
 
       <!-- Bar chart visualization -->
@@ -76,7 +76,7 @@
             &times;
           </button>
           <h2 class="mb-4 text-lg font-semibold">Detailed Data</h2>
-          <HealthFacilitiesTable {selectedRegion} />
+          <HealthFacilitiesTable />
         </div>
       </div>
     {/if}
