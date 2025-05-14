@@ -5,28 +5,32 @@
   import { getPatientAndStockNumbers, type RegionCasesStockData } from "$data/api";
 
   let data: RegionCasesStockData[] = [];
-  let chartContainer: HTMLDivElement;
-  let resizeObserver: ResizeObserver;
+  let chartContainer: HTMLDivElement | null = null;
+  let resizeObserver: ResizeObserver | null = null;
 
   function getChartDimensions() {
-    const width = chartContainer?.clientWidth || 600;
-    // Responsive height: 60% of width, min 250, max 500
-    const height = Math.max(250, Math.min(0.6 * width, 500));
+    // Make the chart fill the parent div (minus button space)
+    if (!chartContainer) return { width: 600, height: 400 };
+    const width = chartContainer.clientWidth || 600;
+    // Use almost all vertical space, minus ~60px for the button and padding
+    const parentHeight = chartContainer.parentElement?.clientHeight || 400;
+    // Leave 60px for the button and some margin
+    const height = Math.max(200, parentHeight - 60);
     return { width, height };
   }
 
   // Subscribe to stores and refetch/redraw on change
-  let unsubscribeRegion: () => void;
-  let unsubscribeDistrict: () => void;
+  let unsubscribeRegion: (() => void) | null = null;
+  let unsubscribeDistrict: (() => void) | null = null;
 
-  async function fetchAndDraw(region: string|null, district: string|null) {
+  async function fetchAndDraw(region: string | null, district: string | null) {
     data = await getPatientAndStockNumbers(region, district);
     drawChart();
   }
 
   onMount(() => {
-    let currentRegion: string|null = null;
-    let currentDistrict: string|null = null;
+    let currentRegion: string | null = null;
+    let currentDistrict: string | null = null;
     unsubscribeRegion = selectedRegion.subscribe((region) => {
       currentRegion = region;
       fetchAndDraw(currentRegion, currentDistrict);
@@ -41,8 +45,8 @@
     resizeObserver = new ResizeObserver(() => drawChart());
     if (chartContainer) resizeObserver.observe(chartContainer);
     return () => {
-      unsubscribeRegion();
-      unsubscribeDistrict();
+      unsubscribeRegion && unsubscribeRegion();
+      unsubscribeDistrict && unsubscribeDistrict();
       if (resizeObserver && chartContainer) resizeObserver.unobserve(chartContainer);
     };
   });
@@ -160,9 +164,9 @@
       .attr("width", x.bandwidth() / 2)
       .attr("height", (d) => innerHeight - yLeft(d.uniquePatients))
       .attr("fill", "#2563eb")
-      .on("mousemove", function(event, d) { showTooltip(event, d, 'patients'); })
+      .on("mousemove", function(event, d) { showTooltip(event, d as RegionCasesStockData, 'patients'); })
       .on("mouseleave", hideTooltip)
-      .on("click", function(event, d) { handleBarClick(d); });
+      .on("click", function(event, d) { handleBarClick(d as RegionCasesStockData); });
 
     // Bars for vaccine stock (right axis)
     svg
@@ -176,9 +180,9 @@
       .attr("width", x.bandwidth() / 2)
       .attr("height", (d) => innerHeight - yRight(d.vaccineStock))
       .attr("fill", "#fbbf24")
-      .on("mousemove", function(event, d) { showTooltip(event, d, 'stock'); })
+      .on("mousemove", function(event, d) { showTooltip(event, d as RegionCasesStockData, 'stock'); })
       .on("mouseleave", hideTooltip)
-      .on("click", function(event, d) { handleBarClick(d); });
+      .on("click", function(event, d) { handleBarClick(d as RegionCasesStockData); });
 
     // Add y axis label (left)
     svg
@@ -265,4 +269,7 @@
   }
 </script>
 
-<div class="h-[min(60vw,500px)] min-h-[250px] w-full relative" bind:this={chartContainer}></div>
+<!-- Chart fills the parent card, leaving space for the button at the bottom -->
+<div class="flex flex-col h-full w-full">
+  <div class="flex-1 relative min-h-[200px]" bind:this={chartContainer}></div>
+</div>
