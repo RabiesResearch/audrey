@@ -1,6 +1,17 @@
 import Papa from "papaparse";
 
 // types
+type MonthlyDataRow = {
+  tangis_facility_id: string;
+  region_name: string;
+  district_council_name: string;
+  facility_name: string;
+  tally_total_patients: string;
+  tally_total_vials: string;
+  submission_date: string;
+  [key: string]: string;
+};
+
 export type FacilityInfo = {
   id: string;
   regionName: string;
@@ -8,6 +19,13 @@ export type FacilityInfo = {
   facilityName: string;
   uniquePatients: number;
   vaccineVialStock: number;
+};
+
+export type RegionCasesStockData = {
+  regionName: string;
+  districtName?: string;
+  uniquePatients: number;
+  vaccineStock: number;
 };
 
 // Utility to load and parse the CSV file (mock API)
@@ -22,7 +40,7 @@ export async function fetchMonthlyData() {
   if (errors.length) {
     throw new Error("CSV parse error: " + JSON.stringify(errors));
   }
-  return data;
+  return data as MonthlyDataRow[];
 }
 
 // Example: get all regions (unique by region_name)
@@ -46,17 +64,10 @@ export async function getRegionsFromMonthlyData() {
 export async function getFacilityInfoById(
   tangis_facility_id: string,
 ): Promise<FacilityInfo | null> {
-  const response = await fetch("/monthly_tz_202505121436.csv");
-  const csvText = await response.text();
-  const { data, errors } = Papa.parse(csvText, {
-    header: true,
-    skipEmptyLines: true,
-  });
-  if (errors.length)
-    throw new Error("CSV parse error: " + JSON.stringify(errors));
+  const rows = await fetchMonthlyData();
   // Filter for the facility
-  const facilityRows = data.filter(
-    (row: any) => row.tangis_facility_id === tangis_facility_id,
+  const facilityRows = rows.filter(
+    (row: MonthlyDataRow) => row.tangis_facility_id === tangis_facility_id,
   );
   if (!facilityRows.length) return null;
   const firstValidRow = facilityRows[0];
@@ -80,23 +91,96 @@ export async function getFacilitiesByRegionDistrict(
   regionName: string | null,
   districtName: string | null,
 ) {
-  const response = await fetch("/monthly_tz_202505121436.csv");
-  const csvText = await response.text();
-  const { data, errors } = Papa.parse(csvText, {
-    header: true,
-    skipEmptyLines: true,
-  });
-  if (errors.length)
-    throw new Error("CSV parse error: " + JSON.stringify(errors));
+  const rows = await fetchMonthlyData();
   // Filter for region and (optionally) district
-  const facilities = data.filter(
-    (row: any) =>
+  const facilities = rows.filter(
+    (row: MonthlyDataRow) =>
       (regionName == null || row.region_name === regionName) &&
       (districtName == null || row.district_council_name === districtName),
   );
   // Get unique tangis_facility_id only
   const uniqueIds = Array.from(
-    new Set(facilities.map((row: any) => row.tangis_facility_id)),
+    new Set(facilities.map((row: MonthlyDataRow) => row.tangis_facility_id)),
   );
   return uniqueIds.filter(Boolean); // Remove empty/null ids
+}
+
+/**
+ * Get the total number of patients seen and total vaccine vials in stock
+ * Returns an array of RegionCasesStockData objects, always grouped by region or district as appropriate.
+ */
+export async function getPatientAndStockNumbers(
+  regionName: string | null,
+  districtName: string | null,
+): Promise<Array<RegionCasesStockData>> {
+  const rows = await fetchMonthlyData();
+
+  if (!regionName && !districtName) {
+    // Group by region
+    const regions = Array.from(new Set(rows.map((r) => r.region_name)));
+    return regions.map((region) => {
+      const regionRows = rows.filter((row) => row.region_name === region);
+      let uniquePatients = 0;
+      let vaccineStock = 0;
+      for (const row of regionRows) {
+        uniquePatients += Number(row["tally-total_patients"] ?? 0);
+        vaccineStock += Number(row["tally-total_vials"] ?? 0);
+      }
+      return {
+        regionName: region as string,
+        uniquePatients,
+        vaccineStock,
+      };
+    });
+  } else if (regionName && !districtName) {
+    // Group by district within the region
+    const districts = Array.from(
+      new Set(
+        rows
+          .filter((r) => r.region_name === regionName)
+          .map((r) => r.district_council_name),
+      ),
+    );
+    return districts.map((district) => {
+      const districtRows = rows.filter(
+        (row) =>
+          row.region_name === regionName &&
+          row.district_council_name === district,
+      );
+      let uniquePatients = 0;
+      let vaccineStock = 0;
+      for (const row of districtRows) {
+        uniquePatients += Number(row["tally-total_patients"] ?? 0);
+        vaccineStock += Number(row["tally-total_vials"] ?? 0);
+      }
+      return {
+        regionName: regionName as string,
+        districtName: district as string,
+        uniquePatients,
+        vaccineStock,
+      };
+    });
+  } else if (regionName && districtName) {
+    // Just the district
+    const districtRows = rows.filter(
+      (row) =>
+        row.region_name === regionName &&
+        row.district_council_name === districtName,
+    );
+    let uniquePatients = 0;
+    let vaccineStock = 0;
+    for (const row of districtRows) {
+      uniquePatients += Number(row["tally-total_patients"] ?? 0);
+      vaccineStock += Number(row["tally-total_vials"] ?? 0);
+    }
+    return [
+      {
+        regionName: regionName as string,
+        districtName: districtName as string,
+        uniquePatients,
+        vaccineStock,
+      },
+    ];
+  }
+  return [];
 }
