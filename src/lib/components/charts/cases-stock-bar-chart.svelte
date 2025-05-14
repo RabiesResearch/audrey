@@ -7,17 +7,43 @@
   let data: RegionCasesStockData[] = [];
   let chartContainer: HTMLDivElement;
 
-  // Only fetch and draw on the client
+  // Subscribe to stores and refetch/redraw on change
+  let unsubscribeRegion: () => void;
+  let unsubscribeDistrict: () => void;
+
+  async function fetchAndDraw(region: string|null, district: string|null) {
+    data = await getPatientAndStockNumbers(region, district);
+    drawChart();
+  }
+
   onMount(() => {
-    async function fetchAndDraw() {
-      data = await getPatientAndStockNumbers($selectedRegion, $selectedDistrict);
-      drawChart();
-    }
-    fetchAndDraw();
+    let currentRegion: string|null = null;
+    let currentDistrict: string|null = null;
+    unsubscribeRegion = selectedRegion.subscribe((region) => {
+      currentRegion = region;
+      fetchAndDraw(currentRegion, currentDistrict);
+    });
+    unsubscribeDistrict = selectedDistrict.subscribe((district) => {
+      currentDistrict = district;
+      fetchAndDraw(currentRegion, currentDistrict);
+    });
+    // Initial fetch
+    fetchAndDraw(currentRegion, currentDistrict);
+    return () => {
+      unsubscribeRegion();
+      unsubscribeDistrict();
+    };
   });
 
-  $: if (chartContainer && data.length) {
-    drawChart();
+  function handleBarClick(d: RegionCasesStockData) {
+    // If a region is selected, clicking a bar means select a district
+    // If no region is selected, clicking a bar means select a region
+    if ($selectedRegion && d.districtName) {
+      selectedDistrict.set(d.districtName ?? null);
+    } else if (d.regionName) {
+      selectedRegion.set(d.regionName ?? null);
+      selectedDistrict.set(null);
+    }
   }
 
   function drawChart() {
@@ -76,7 +102,7 @@
       .call(d3.axisRight(yRight));
 
     // Tooltip event handlers
-    function showTooltip(event, d, type) {
+    function showTooltip(event: MouseEvent, d: RegionCasesStockData, type: 'patients' | 'stock') {
       let label = d.regionName;
       if (d.districtName) {
         label += `, ${d.districtName}`;
@@ -116,7 +142,8 @@
       .attr("height", (d) => height - yLeft(d.uniquePatients))
       .attr("fill", "#2563eb")
       .on("mousemove", function(event, d) { showTooltip(event, d, 'patients'); })
-      .on("mouseleave", hideTooltip);
+      .on("mouseleave", hideTooltip)
+      .on("click", function(event, d) { handleBarClick(d); });
 
     // Bars for vaccine stock (right axis)
     svg
@@ -131,7 +158,8 @@
       .attr("height", (d) => height - yRight(d.vaccineStock))
       .attr("fill", "#fbbf24")
       .on("mousemove", function(event, d) { showTooltip(event, d, 'stock'); })
-      .on("mouseleave", hideTooltip);
+      .on("mouseleave", hideTooltip)
+      .on("click", function(event, d) { handleBarClick(d); });
 
     // Add y axis label (left)
     svg
