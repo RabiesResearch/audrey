@@ -18,7 +18,7 @@
 
   type FacilityInfoWithChildren = {
     id: string | null;
-    regionName: string;
+    regionName: string | null;
     districtName: string | null;
     facilityName: string | null;
     uniquePatients: number;
@@ -50,7 +50,7 @@
       if (!node) {
         node = {
           id: key.id,
-          regionName: key.regionName ?? '',
+          regionName: key.regionName ?? null,
           districtName: key.districtName ?? null,
           facilityName: key.facilityName ?? null,
           uniquePatients: 0,
@@ -75,7 +75,7 @@
       // Find or create the district node under the region
       const districtNode = getOrCreateNode(regionNode.children!, {
         id: null,
-        regionName: entry.regionName, // <-- ensure regionName is set here
+        regionName: null,
         districtName: entry.districtName,
         facilityName: null,
       });
