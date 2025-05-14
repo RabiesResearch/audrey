@@ -7,19 +7,21 @@
   } from "$lib/stores/uiStore";
   import { getAllRegionsAndDistricts } from "$lib/data/api";
   import { onMount } from "svelte";
+  import { derived } from "svelte/store";
 
   // Toggle sidebar
   const toggleSidebar = (): boolean => ($sidebarOpen = !$sidebarOpen);
 
   let showDropdown = false;
-  let filteredResults: { region: string; district: string }[] = [];
+  let filteredResults: { region: string; district: string | null }[] = [];
 
   let searchTerm = "";
-  $: searchTerm = $selectedRegion && $selectedDistrict
-    ? `${$selectedRegion} > ${$selectedDistrict}`
-    : $selectedRegion
-      ? $selectedRegion
-      : "";
+  $: searchTerm =
+    $selectedRegion && $selectedDistrict
+      ? `${$selectedRegion} > ${$selectedDistrict}`
+      : $selectedRegion
+        ? $selectedRegion
+        : "";
 
   // Fetch regions/districts if not already loaded
   onMount(() => {
@@ -33,6 +35,13 @@
     return () => unsub();
   });
 
+  // Compute unique regions for region-only search
+  const uniqueRegions = derived(
+    allRegionsAndDistricts,
+    ($all: { region: string; district: string }[]) =>
+      Array.from(new Set($all.map((item) => item.region))),
+  );
+
   function highlightMatch(text: string, term: string) {
     if (!term) return text;
     const idx = text.toLowerCase().indexOf(term.toLowerCase());
@@ -44,18 +53,36 @@
   }
 
   function handleSearch(e: Event) {
-    searchTerm = (e.target as HTMLInputElement).value;
-    if (searchTerm.length > 0) {
-      const term = searchTerm.toLowerCase();
-      filteredResults = $allRegionsAndDistricts.filter(
-        (item) =>
+    let input = (e.target as HTMLInputElement).value;
+    if (input.length > 0) {
+      const term = input.toLowerCase();
+      // Region/district pairs
+      let pairs = $allRegionsAndDistricts.filter(
+        (item: { region: string; district: string }) =>
           item.region.toLowerCase().includes(term) ||
           item.district.toLowerCase().includes(term),
       );
+      // Add region-only matches for all regions that match the term
+      let regionOnly = $uniqueRegions
+        .filter((region: string) => region.toLowerCase().includes(term))
+        .map((region: string) => ({ region, district: null }));
+      // Remove any region-only result that is already present as a pair with a matching region
+      regionOnly = regionOnly.filter(
+        (r) =>
+          !pairs.some(
+            (item) =>
+              item.region === r.region &&
+              item.district &&
+              item.district.toLowerCase().includes(term),
+          ),
+      );
+      filteredResults = [...regionOnly, ...pairs];
       showDropdown = filteredResults.length > 0;
+      searchTerm = input;
     } else {
       showDropdown = false;
       filteredResults = [];
+      searchTerm = "";
     }
   }
 
@@ -66,6 +93,10 @@
     $selectedRegion = region;
     $selectedDistrict = district;
     showDropdown = false;
+    // If only region is selected, update searchTerm accordingly
+    if (region && !district) {
+      searchTerm = region;
+    }
   };
 
   const clearLocation = (): void => {
@@ -146,8 +177,10 @@
                 on:mousedown={() => selectLocation(item.region, item.district)}
               >
                 <span>{@html highlightMatch(item.region, searchTerm)}</span>
-                <span class="text-gray-400"> &gt; </span>
-                <span>{@html highlightMatch(item.district, searchTerm)}</span>
+                {#if item.district}
+                  <span class="text-gray-400"> &gt; </span>
+                  <span>{@html highlightMatch(item.district, searchTerm)}</span>
+                {/if}
               </li>
             {/each}
           </ul>
