@@ -189,37 +189,66 @@
       .style("font-size", "14px")
       .text("Vaccine Vials");
 
-    // Add legend
+    // Add legend background box (make it wider and taller to fit text)
     svg
       .append("rect")
-      .attr("x", width - 120)
+      .attr("x", width - 140)
+      .attr("y", -40)
+      .attr("width", 135)
+      .attr("height", 54)
+      .attr("fill", "#fff")
+      .attr("stroke", "#334155")
+      .attr("stroke-width", 1)
+      .lower();
+
+    // Add legend items (squares and text)
+    svg
+      .append("rect")
+      .attr("x", width - 125)
       .attr("y", -30)
       .attr("width", 16)
       .attr("height", 16)
-      .attr("fill", "#2563eb");
+      .attr("fill", "#2563eb")
+      .attr("stroke", "#334155")
+      .attr("stroke-width", 1);
     svg
       .append("text")
-      .attr("x", width - 100)
-      .attr("y", -18)
+      .attr("x", width - 105)
+      .attr("y", -20)
       .attr("alignment-baseline", "middle")
-      .attr("fill", "#2563eb")
+      .attr("fill", "#334155")
       .style("font-size", "13px")
       .text("Unique Patients");
     svg
       .append("rect")
-      .attr("x", width - 120)
+      .attr("x", width - 125)
       .attr("y", -10)
       .attr("width", 16)
       .attr("height", 16)
-      .attr("fill", "#fbbf24");
+      .attr("fill", "#fbbf24")
+      .attr("stroke", "#334155")
+      .attr("stroke-width", 1);
     svg
       .append("text")
-      .attr("x", width - 100)
-      .attr("y", 2)
+      .attr("x", width - 105)
+      .attr("y", 0)
       .attr("alignment-baseline", "middle")
-      .attr("fill", "#fbbf24")
+      .attr("fill", "#334155")
       .style("font-size", "13px")
       .text("Vaccine Vials");
+
+    // Style axes text and labels and legend text
+    svg.selectAll('.tick text')
+      .attr('fill', '#334155');
+    svg.selectAll('.domain, .tick line')
+      .attr('stroke', '#334155');
+    // Style y axis labels (left and right)
+    svg.selectAll('text')
+      .filter(function() {
+        const txt = d3.select(this).text();
+        return txt === 'Unique Patients' || txt === 'Vaccine Vials';
+      })
+      .attr('fill', '#334155');
   }
 </script>
 

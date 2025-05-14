@@ -48,11 +48,7 @@
     <!-- Bar chart visualization -->
     <div class="h-[500px] rounded-lg bg-white p-4 shadow-md">
       <h2 class="mb-2 text-lg font-semibold">Cases and Vaccine Stock</h2>
-      <p>Here goes the cases and vaccine stock bar chart</p>
-      <CasesBarChart
-        {selectedRegion}
-        on:regionSelect={(e) => handleRegionSelect(e.detail)}
-      />
+      <CasesBarChart />
     </div>
   </div>
 
