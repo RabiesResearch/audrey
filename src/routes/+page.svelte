@@ -1,11 +1,9 @@
 <script lang="ts">
-  //   import TanzaniaMap from "$lib/components/charts/stock-cases-chloropleth-map.svelte";
+  import StockMap from "$lib/components/charts/stock-cases-map.svelte";
   import CasesBarChart from "$lib/components/charts/cases-stock-bar-chart.svelte";
   import HealthFacilitiesTable from "$components/tables/health-facilities-table.svelte";
   import { onMount } from "svelte";
   import toast from "svelte-hot-french-toast";
-  import { allRegionsAndDistricts } from "$lib/stores/uiStore";
-  import { getAllRegionsAndDistricts } from "$lib/data/api";
 
   // State for selected region/district
   let selectedRegion: string;
@@ -43,7 +41,7 @@
       <div class="h-full rounded-lg bg-white p-4 shadow-md flex flex-col">
         <h2 class="mb-2 text-lg font-semibold">Geographic Distribution</h2>
         <p>Here goes the Tanzania map visualization</p>
-        <!-- <TanzaniaMap /> -->
+        <StockMap />
       </div>
 
       <!-- Bar chart visualization -->
