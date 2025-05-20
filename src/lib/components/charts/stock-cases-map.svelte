@@ -25,9 +25,31 @@
   let unsubscribeRegion: (() => void) | null = null;
   let unsubscribeDistrict: (() => void) | null = null;
 
+  async function getGeoJsonData(
+    region: string | null,
+    district: string | null,
+  ) {
+    let data = null;
+    if (!region) {
+      data = await d3.json("/geojson/tz_regions_2022.geojson");
+    } else if (region && !district) {
+      await d3.json("/geojson/tz_districts_2022.geojson").then((d) => {
+        const geoJsonFeatures = d.features.filter((feature: any) => {
+          return feature.properties.reg_nam === region;
+        });
+        data = d;
+        data.features = geoJsonFeatures;
+      });
+    } else if (region && district) {
+      data = await d3.json("/geojson/tz_wards_2022.geojson");
+      // TODO
+    }
+    return data;
+  }
+
   async function fetchAndDraw(region: string | null, district: string | null) {
-    geoJsonData = await d3.json("/geojson/tz_regions_2022.geojson");
     data = await getPatientAndStockNumbers(region, district);
+    geoJsonData = await getGeoJsonData(region, district);
     drawChart();
   }
 
@@ -58,7 +80,6 @@
   function handleAreaClick(d: any) {
     // If a region is already selected, clicking an area means select a district
     // If no region is selected, clicking an area means select a region
-    console.log(d.properties);
     if ($selectedRegion && d.properties.district_name) {
       selectedDistrict.set(d.properties.district_name ?? null);
     } else if (d.properties.reg_name) {
@@ -144,6 +165,7 @@
       tooltip.transition().duration(100).style("opacity", 0);
     }
 
+    // Draw the map with chloropleth
     svg
       .append("g")
       .selectAll("path")
