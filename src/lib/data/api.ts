@@ -13,9 +13,11 @@ type MonthlyDataRow = {
 };
 
 export type FacilityInfo = {
-  id: string;
+  regionID: string;
   regionName: string;
-  districtName: string;
+  districtID: string;
+  districtName: string; // TODO all of these are technically district council names
+  facilityID: string;
   facilityName: string;
   uniquePatients: number;
   vaccineVialStock: number;
@@ -26,9 +28,17 @@ export type RegionCasesStockData = {
   regionName: string;
   districtID?: string;
   districtName?: string;
+  facilityID?: string;
   facilityName?: string;
   uniquePatients: number;
   vaccineStock: number;
+};
+
+export type RegionAndDistrict = {
+  regionID: string;
+  regionName: string;
+  districtID: string;
+  districtName: string;
 };
 
 // Utility to load and parse the CSV file (mock API)
@@ -75,11 +85,13 @@ export async function getFacilityInfoById(
   if (!facilityRows.length) return null;
   const firstValidRow = facilityRows[0];
   return {
-    id: firstValidRow.tangis_facility_id,
+    facilityID: firstValidRow.tangis_facility_id,
     facilityName: firstValidRow.facility_name,
     uniquePatients: Number(firstValidRow["tally-total_patients"] ?? 0),
     vaccineVialStock: Number(firstValidRow["tally-total_vials"] ?? 0),
+    regionID: firstValidRow.tangis_region_id,
     regionName: firstValidRow.region_name,
+    districtID: firstValidRow.tangis_district_council_id,
     districtName: firstValidRow.district_council_name,
   };
 }
@@ -260,25 +272,25 @@ export async function getPatientAndStockNumbers(
   return [];
 }
 
-let allRegionsAndDistrictsCache: { region: string; district: string }[] | null =
-  null;
+let allRegionsAndDistrictsCache: RegionAndDistrict[] | null = null;
 
 export async function getAllRegionsAndDistricts(): Promise<
-  { region: string; district: string }[]
+  RegionAndDistrict[]
 > {
   if (allRegionsAndDistrictsCache) return allRegionsAndDistrictsCache;
-  // Use fetchMonthlyData (which uses PapaParse) and extract unique region/district pairs
   const rows = await fetchMonthlyData();
   const seen = new Set<string>();
-  const result: { region: string; district: string }[] = [];
+  const result: RegionAndDistrict[] = [];
   for (const row of rows) {
-    const region = row.region_name?.trim();
-    const district = row.district_council_name?.trim();
-    if (region && district) {
-      const key = region + "|" + district;
+    const regionName = row.region_name?.trim();
+    const regionID = row.tangis_region_id?.trim();
+    const districtName = row.district_council_name?.trim();
+    const districtID = row.tangis_district_council_id?.trim();
+    if (regionName && districtName) {
+      const key = regionName + "|" + districtName;
       if (!seen.has(key)) {
         seen.add(key);
-        result.push({ region, district });
+        result.push({ regionID, regionName, districtID, districtName });
       }
     }
   }
