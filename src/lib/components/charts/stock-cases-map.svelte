@@ -89,6 +89,7 @@
       .attr("width", width)
       .attr("height", height);
 
+    console.log(geoJsonData.features.length); // works
     svg
       .append("g")
       .selectAll("path")
@@ -97,7 +98,13 @@
       .append("path")
       .attr("d", path)
       .attr("fill", (d: any) => {
-        return color(d.vaccineStock || 0);
+        const areaData = data.find((area) => {
+            console.log(area.regionID, d.properties.region_id);
+            if (area.regionID === d.properties.region_id) {
+              return true;
+            }
+        });
+        return color(areaData?.vaccineStock || 0);
       })
       .attr("stroke", "#334155")
       .attr("stroke-width", 1);  // TODO add tooltip

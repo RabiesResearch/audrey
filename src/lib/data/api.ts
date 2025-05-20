@@ -22,6 +22,7 @@ export type FacilityInfo = {
 };
 
 export type RegionCasesStockData = {
+  regionID: string;
   regionName: string;
   districtName?: string;
   facilityName?: string;
@@ -106,6 +107,20 @@ export async function getFacilitiesByRegionDistrict(
   return uniqueIds.filter(Boolean); // Remove empty/null ids
 }
 
+async function getUniqueTanGisRegionIds() {
+  const rows = await fetchMonthlyData();
+  const regions = rows.map((row) => ({
+    tangis_region_id: row.tangis_region_id,
+    region_name: row.region_name,
+  }));
+  // Get unique tangis_facility_id only
+  const uniqueIds = regions.filter(
+    (e, i) =>
+      regions.findIndex((a) => a.tangis_region_id === e.tangis_region_id) === i,
+  );
+  return uniqueIds;
+}
+
 /**
  * Get the total number of patients seen and total vaccine vials in stock
  * Returns an array of RegionCasesStockData objects, always grouped by region, district, or facility as appropriate.
@@ -115,6 +130,7 @@ export async function getPatientAndStockNumbers(
   districtName: string | null,
 ): Promise<Array<RegionCasesStockData>> {
   const rows = await fetchMonthlyData();
+  const regionIds = await getUniqueTanGisRegionIds();
 
   if (!regionName && !districtName) {
     // Group by region
@@ -128,6 +144,8 @@ export async function getPatientAndStockNumbers(
         vaccineStock += Number(row["tally-total_vials"] ?? 0);
       }
       return {
+        regionID: regionIds.find((r) => r.region_name === region)
+          ?.tangis_region_id as string,
         regionName: region as string,
         uniquePatients,
         vaccineStock,
