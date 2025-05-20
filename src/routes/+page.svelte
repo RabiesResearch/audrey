@@ -40,7 +40,6 @@
       <!-- Map visualization -->
       <div class="h-full rounded-lg bg-white p-4 shadow-md flex flex-col">
         <h2 class="mb-2 text-lg font-semibold">Geographic Distribution</h2>
-        <p>Here goes the Tanzania map visualization</p>
         <StockMap />
       </div>
 
