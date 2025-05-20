@@ -33,7 +33,7 @@
     if (!region) {
       data = await d3.json("/geojson/tz_regions_2022.geojson");
     } else if (region && !district) {
-      await d3.json("/geojson/tz_districts_2022.geojson").then((d) => {
+      await d3.json("/geojson/tz_district_councils_2022.geojson").then((d) => {
         const geoJsonFeatures = d.features.filter((feature: any) => {
           return feature.properties.reg_nam === region;
         });
@@ -123,42 +123,83 @@
 
     // Tooltip event handlers
     function showTooltip(event: MouseEvent, d: any) {
-      const regionID = d.properties.region_id;
-      const regionData = data.find((r) => r.regionID === regionID);
-
       // Get mouse position relative to the chart container
       const [mouseX, mouseY] = d3.pointer(event, chartContainer);
 
-      if (!regionData) {
+      // Different lookup based on whether we're viewing regions or districts
+      let areaData;
+
+      if (!$selectedRegion) {
+        // Region view
+        areaData = data.find((r) => r.regionID === d.properties.region_id);
+
+        if (!areaData) {
+          tooltip
+            .html(
+              `<div><strong>${d.properties.reg_name || "Unknown Region"}</strong></div>` +
+                `<div>No data for this area</span></div>`,
+            )
+            .style("left", mouseX + 10 + "px")
+            .style("top", mouseY - 50 + "px")
+            .transition()
+            .duration(100)
+            .style("opacity", 1);
+          return;
+        }
+
+        const regionName =
+          areaData.regionName || d.properties.reg_name || "Unknown Region";
+        const vaccineStock = areaData.vaccineStock || 0;
+        const uniquePatients = areaData.uniquePatients || 0;
+
         tooltip
           .html(
-            `<div><strong>${d.properties.reg_name || "Unknown Region"}</strong></div>` +
-              `<div>No data for this area</span></div>`,
+            `<div><strong>${regionName}</strong></div>` +
+              `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
+              `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`,
           )
           .style("left", mouseX + 10 + "px")
           .style("top", mouseY - 50 + "px")
           .transition()
           .duration(100)
           .style("opacity", 1);
-        return;
+      } else if ($selectedRegion && !$selectedDistrict) {
+        // District view
+        areaData = data.find((row) => row.districtID === d.properties.concl_d);
+
+        if (!areaData) {
+          tooltip
+            .html(
+              `<div><strong>${d.properties.district_name || "Unknown District"}</strong></div>` +
+                `<div>No data for this area</span></div>`,
+            )
+            .style("left", mouseX + 10 + "px")
+            .style("top", mouseY - 50 + "px")
+            .transition()
+            .duration(100)
+            .style("opacity", 1);
+          return;
+        }
+
+        const districtName =
+          areaData.districtName ||
+          d.properties.district_name ||
+          "Unknown District";
+        const vaccineStock = areaData.vaccineStock || 0;
+        const uniquePatients = areaData.uniquePatients || 0;
+
+        tooltip
+          .html(
+            `<div><strong>${districtName}</strong></div>` +
+              `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
+              `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`,
+          )
+          .style("left", mouseX + 10 + "px")
+          .style("top", mouseY - 50 + "px")
+          .transition()
+          .duration(100)
+          .style("opacity", 1);
       }
-
-      const regionName =
-        regionData.regionName || d.properties.reg_name || "Unknown Region";
-      const vaccineStock = regionData.vaccineStock || 0;
-      const uniquePatients = regionData.uniquePatients || 0;
-
-      tooltip
-        .html(
-          `<div><strong>${regionName}</strong></div>` +
-            `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
-            `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`,
-        )
-        .style("left", mouseX + 10 + "px")
-        .style("top", mouseY - 50 + "px")
-        .transition()
-        .duration(100)
-        .style("opacity", 1);
     }
 
     function hideTooltip() {
@@ -174,10 +215,20 @@
       .append("path")
       .attr("d", path)
       .attr("fill", (d: any) => {
-        const areaData = data.find(
-          (area) => area.regionID === d.properties.region_id,
-        );
-        return color(areaData?.vaccineStock || 0);
+        // Check if we're showing regions or districts
+        if (!$selectedRegion) {
+          // Region view - find the region data
+          const areaData = data.find(
+            (row) => row.regionID === d.properties.region_id,
+          );
+          return color(areaData?.vaccineStock || 0);
+        } else {
+          // District view - find the district data by district name
+          const areaData = data.find(
+            (row) => row.districtID === d.properties.concl_d,
+          );
+          return color(areaData?.vaccineStock || 0);
+        }
       })
       .attr("stroke", "#334155")
       .attr("stroke-width", 1)
