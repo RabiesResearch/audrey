@@ -136,14 +136,18 @@
       } else if (!d.facilityName) {
         regionNote = '<div class="text-xs text-gray-500">(Sum across all facilities in this district)</div>';
       }
+
+      // Get mouse position relative to the chart container
+      const [mouseX, mouseY] = d3.pointer(event, chartContainer);
+      
       tooltip
         .html(
           `<div><strong>${label}</strong></div>` +
-          `<div>${valueLabel}: <span class="font-bold">${value}</span></div>` +
+          `<div>${valueLabel}: <span class="font-bold">${value.toLocaleString()}</span></div>` +
           regionNote
         )
-        .style("left", (event.clientX + 20) + "px")
-        .style("top", (event.clientY - 10) + "px")
+        .style("left", (mouseX + 10) + "px")
+        .style("top", (mouseY - 40) + "px")
         .transition()
         .duration(100)
         .style("opacity", 1);
