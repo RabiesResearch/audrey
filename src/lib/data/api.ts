@@ -24,6 +24,7 @@ export type FacilityInfo = {
 export type RegionCasesStockData = {
   regionID: string;
   regionName: string;
+  districtID?: string;
   districtName?: string;
   facilityName?: string;
   uniquePatients: number;
@@ -113,11 +114,39 @@ async function getUniqueTanGisRegionIds() {
     tangis_region_id: row.tangis_region_id,
     region_name: row.region_name,
   }));
-  // Get unique tangis_facility_id only
+  // Get unique tangis_region_id only
   const uniqueIds = regions.filter(
     (e, i) =>
       regions.findIndex((a) => a.tangis_region_id === e.tangis_region_id) === i,
   );
+  return uniqueIds;
+}
+
+async function getUniqueTanGisDistrictIds(regionName: string) {
+  const rows = await fetchMonthlyData();
+  const districts = rows
+    .map((row) => {
+      if (row.region_name === regionName) {
+        return {
+          tangis_region_id: row.tangis_region_id,
+          region_name: row.region_name,
+          tangis_district_council_id: row.tangis_district_council_id,
+          district_council_name: row.district_council_name,
+        };
+      }
+      return null;
+    })
+    .filter(Boolean); // Filter out null values
+  console.log(districts);
+  // Get unique tangis_district_council_id only
+  const uniqueIds = districts
+    .filter(Boolean) // Remove empty/null ids
+    .filter(
+      (e, i) =>
+        districts.findIndex(
+          (a) => a.tangis_district_council_id === e.tangis_district_council_id,
+        ) === i,
+    );
   return uniqueIds;
 }
 
@@ -131,6 +160,10 @@ export async function getPatientAndStockNumbers(
 ): Promise<Array<RegionCasesStockData>> {
   const rows = await fetchMonthlyData();
   const regionIds = await getUniqueTanGisRegionIds();
+  let districtIds = [];
+  if (regionName) {
+    districtIds = await getUniqueTanGisDistrictIds(regionName);
+  }
 
   if (!regionName && !districtName) {
     // Group by region
@@ -173,7 +206,12 @@ export async function getPatientAndStockNumbers(
         vaccineStock += Number(row["tally-total_vials"] ?? 0);
       }
       return {
+        regionID: regionIds.find((r) => r.region_name === regionName)
+          ?.tangis_region_id as string,
         regionName: regionName as string,
+        districtID: districtIds.find(
+          (r) => r.district_council_name === district,
+        )?.tangis_district_council_id as string,
         districtName: district as string,
         uniquePatients,
         vaccineStock,
@@ -206,7 +244,12 @@ export async function getPatientAndStockNumbers(
         vaccineStock += Number(row["tally-total_vials"] ?? 0);
       }
       return {
+        regionID: regionIds.find((r) => r.region_name === regionName)
+          ?.tangis_region_id as string,
         regionName: regionName as string,
+        districtID: districtIds.find(
+          (r) => r.district_council_name === districtName,
+        )?.tangis_district_council_id as string,
         districtName: districtName as string,
         facilityName: facility as string,
         uniquePatients,
