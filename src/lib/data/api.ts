@@ -98,20 +98,20 @@ export async function getFacilityInfoById(
 
 /**
  * Get a list of health facilities for the selected region and district.
- * @param regionName - The selected region name (string, e.g. "Mtwara")
- * @param districtName - The selected district name (string, e.g. "Nanyumbu District Council")
+ * @param regionID - The selected region ID
+ * @param districtID - The selected district ID
  * Returns an array of tangis_facility_id
  */
 export async function getFacilitiesByRegionDistrict(
-  regionName: string | null,
-  districtName: string | null,
+  regionID: string | null,
+  districtID: string | null,
 ) {
   const rows = await fetchMonthlyData();
-  // Filter for region and (optionally) district
+  // Filter for region and (optionally) district using IDs
   const facilities = rows.filter(
     (row: MonthlyDataRow) =>
-      (regionName == null || row.region_name === regionName) &&
-      (districtName == null || row.district_council_name === districtName),
+      (regionID == null || row.tangis_region_id === regionID) &&
+      (districtID == null || row.tangis_district_council_id === districtID),
   );
   // Get unique tangis_facility_id only
   const uniqueIds = Array.from(
@@ -149,7 +149,6 @@ async function getUniqueTanGisDistrictIds(regionName: string) {
       return null;
     })
     .filter(Boolean); // Filter out null values
-  console.log(districts);
   // Get unique tangis_district_council_id only
   const uniqueIds = districts
     .filter(Boolean) // Remove empty/null ids
@@ -165,19 +164,26 @@ async function getUniqueTanGisDistrictIds(regionName: string) {
 /**
  * Get the total number of patients seen and total vaccine vials in stock
  * Returns an array of RegionCasesStockData objects, always grouped by region, district, or facility as appropriate.
+ * @param regionID - The selected region ID 
+ * @param districtID - The selected district ID
  */
 export async function getPatientAndStockNumbers(
-  regionName: string | null,
-  districtName: string | null,
+  regionID: string | null,
+  districtID: string | null,
 ): Promise<Array<RegionCasesStockData>> {
   const rows = await fetchMonthlyData();
   const regionIds = await getUniqueTanGisRegionIds();
   let districtIds = [];
-  if (regionName) {
-    districtIds = await getUniqueTanGisDistrictIds(regionName);
+  
+  if (regionID) {
+    // Find region name from ID to use with getUniqueTanGisDistrictIds
+    const regionObj = regionIds.find(r => r.tangis_region_id === regionID);
+    if (regionObj) {
+      districtIds = await getUniqueTanGisDistrictIds(regionObj.region_name);
+    }
   }
 
-  if (!regionName && !districtName) {
+  if (!regionID && !districtID) {
     // Group by region
     const regions = Array.from(new Set(rows.map((r) => r.region_name)));
     return regions.map((region) => {
@@ -196,19 +202,24 @@ export async function getPatientAndStockNumbers(
         vaccineStock,
       };
     });
-  } else if (regionName && !districtName) {
-    // Group by district within the region
+  } else if (regionID && !districtID) {
+    // Group by district within the region - but now we filter by region ID
+    const regionObj = regionIds.find(r => r.tangis_region_id === regionID);
+    if (!regionObj) return [];
+    
+    const regionName = regionObj.region_name;
     const districts = Array.from(
       new Set(
         rows
-          .filter((r) => r.region_name === regionName)
+          .filter((r) => r.tangis_region_id === regionID)
           .map((r) => r.district_council_name),
       ),
     );
+    
     return districts.map((district) => {
       const districtRows = rows.filter(
         (row) =>
-          row.region_name === regionName &&
+          row.tangis_region_id === regionID &&
           row.district_council_name === district,
       );
       let uniquePatients = 0;
@@ -218,8 +229,7 @@ export async function getPatientAndStockNumbers(
         vaccineStock += Number(row["tally-total_vials"] ?? 0);
       }
       return {
-        regionID: regionIds.find((r) => r.region_name === regionName)
-          ?.tangis_region_id as string,
+        regionID: regionID,
         regionName: regionName as string,
         districtID: districtIds.find(
           (r) => r.district_council_name === district,
@@ -229,24 +239,34 @@ export async function getPatientAndStockNumbers(
         vaccineStock,
       };
     });
-  } else if (regionName && districtName) {
-    // Group by facility within the district
+  } else if (regionID && districtID) {
+    // Group by facility within the district - filter by region ID and district ID
+    const regionObj = regionIds.find(r => r.tangis_region_id === regionID);
+    if (!regionObj) return [];
+    
+    const regionName = regionObj.region_name;
+    const districtObj = districtIds.find(d => d.tangis_district_council_id === districtID);
+    if (!districtObj) return [];
+    
+    const districtName = districtObj.district_council_name;
+    
     const facilities = Array.from(
       new Set(
         rows
           .filter(
             (r) =>
-              r.region_name === regionName &&
-              r.district_council_name === districtName,
+              r.tangis_region_id === regionID &&
+              r.tangis_district_council_id === districtID,
           )
           .map((r) => r.facility_name),
       ),
     );
+    
     return facilities.map((facility) => {
       const facilityRows = rows.filter(
         (row) =>
-          row.region_name === regionName &&
-          row.district_council_name === districtName &&
+          row.tangis_region_id === regionID &&
+          row.tangis_district_council_id === districtID &&
           row.facility_name === facility,
       );
       let uniquePatients = 0;
@@ -256,12 +276,9 @@ export async function getPatientAndStockNumbers(
         vaccineStock += Number(row["tally-total_vials"] ?? 0);
       }
       return {
-        regionID: regionIds.find((r) => r.region_name === regionName)
-          ?.tangis_region_id as string,
+        regionID: regionID,
         regionName: regionName as string,
-        districtID: districtIds.find(
-          (r) => r.district_council_name === districtName,
-        )?.tangis_district_council_id as string,
+        districtID: districtID,
         districtName: districtName as string,
         facilityName: facility as string,
         uniquePatients,

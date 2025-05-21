@@ -1,12 +1,18 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import * as d3 from "d3";
-  import { selectedRegion, selectedDistrict } from "$lib/stores/uiStore";
-  import { getPatientAndStockNumbers, type RegionCasesStockData } from "$data/api";
+  import { 
+    selectedRegionID, 
+    selectedDistrictID, 
+    selectedRegionName, 
+    selectedDistrictName
+  } from "$lib/stores/uiStore";
+  import { getPatientAndStockNumbers, type RegionCasesStockData, getAllRegionsAndDistricts } from "$data/api";
 
   let data: RegionCasesStockData[] = [];
   let chartContainer: HTMLDivElement | null = null;
   let resizeObserver: ResizeObserver | null = null;
+  let regionDistrictMap: Map<string, { name: string, districts: Map<string, string> }> = new Map();
 
   function getChartDimensions() {
     // Make the chart fill the parent div (minus button space)
@@ -19,34 +25,64 @@
     return { width, height };
   }
 
-  // Subscribe to stores and refetch/redraw on change
-  let unsubscribeRegion: (() => void) | null = null;
-  let unsubscribeDistrict: (() => void) | null = null;
+  // Build a map of region IDs to names and district IDs to names
+  async function buildRegionDistrictMap() {
+    const regionsAndDistricts = await getAllRegionsAndDistricts();
+    regionsAndDistricts.forEach(item => {
+      if (!regionDistrictMap.has(item.regionID)) {
+        regionDistrictMap.set(item.regionID, { 
+          name: item.regionName, 
+          districts: new Map() 
+        });
+      }
+      
+      const region = regionDistrictMap.get(item.regionID);
+      if (region) {
+        region.districts.set(item.districtID, item.districtName);
+      }
+    });
+  }
 
-  async function fetchAndDraw(region: string | null, district: string | null) {
-    data = await getPatientAndStockNumbers(region, district);
+  // Subscribe to stores and refetch/redraw on change
+  let unsubscribeRegionID: (() => void) | null = null;
+  let unsubscribeDistrictID: (() => void) | null = null;
+  let unsubscribeRegionName: (() => void) | null = null;
+  let unsubscribeDistrictName: (() => void) | null = null;
+
+  async function fetchAndDraw(regionID: string | null, districtID: string | null) {
+    data = await getPatientAndStockNumbers(regionID, districtID);
     drawChart();
   }
 
-  onMount(() => {
-    let currentRegion: string | null = null;
-    let currentDistrict: string | null = null;
-    unsubscribeRegion = selectedRegion.subscribe((region) => {
-      currentRegion = region;
-      fetchAndDraw(currentRegion, currentDistrict);
+  onMount(async () => {
+    // Build the region/district map for lookups
+    await buildRegionDistrictMap();
+    
+    let currentRegionID: string | null = null;
+    let currentDistrictID: string | null = null;
+    
+    unsubscribeRegionID = selectedRegionID.subscribe((regionID) => {
+      currentRegionID = regionID;
+      fetchAndDraw(currentRegionID, currentDistrictID);
     });
-    unsubscribeDistrict = selectedDistrict.subscribe((district) => {
-      currentDistrict = district;
-      fetchAndDraw(currentRegion, currentDistrict);
+    
+    unsubscribeDistrictID = selectedDistrictID.subscribe((districtID) => {
+      currentDistrictID = districtID;
+      fetchAndDraw(currentRegionID, currentDistrictID);
     });
+
     // Initial fetch
-    fetchAndDraw(currentRegion, currentDistrict);
+    fetchAndDraw(currentRegionID, currentDistrictID);
+    
     // Responsive: redraw on resize
     resizeObserver = new ResizeObserver(() => drawChart());
     if (chartContainer) resizeObserver.observe(chartContainer);
+    
     return () => {
-      unsubscribeRegion && unsubscribeRegion();
-      unsubscribeDistrict && unsubscribeDistrict();
+      unsubscribeRegionID && unsubscribeRegionID();
+      unsubscribeDistrictID && unsubscribeDistrictID();
+      unsubscribeRegionName && unsubscribeRegionName();
+      unsubscribeDistrictName && unsubscribeDistrictName();
       if (resizeObserver && chartContainer) resizeObserver.unobserve(chartContainer);
     };
   });
@@ -54,11 +90,11 @@
   function handleBarClick(d: RegionCasesStockData) {
     // If a region is selected, clicking a bar means select a district
     // If no region is selected, clicking a bar means select a region
-    if ($selectedRegion && d.districtName) {
-      selectedDistrict.set(d.districtName ?? null);
-    } else if (d.regionName) {
-      selectedRegion.set(d.regionName ?? null);
-      selectedDistrict.set(null);
+    if ($selectedRegionID && d.districtID) {
+      selectedDistrictID.set(d.districtID ?? null);
+    } else if (d.regionID) {
+      selectedRegionID.set(d.regionID ?? null);
+      selectedDistrictID.set(null);
     }
   }
 

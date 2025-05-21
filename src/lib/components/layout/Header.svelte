@@ -2,10 +2,12 @@
   import {
     sidebarOpen,
     allRegionsAndDistricts,
-    selectedRegion,
-    selectedDistrict,
+    selectedRegionID,
+    selectedDistrictID,
+    selectedRegionName,
+    selectedDistrictName
   } from "$lib/stores/uiStore";
-  import { getAllRegionsAndDistricts } from "$lib/data/api";
+  import { getAllRegionsAndDistricts, type RegionAndDistrict } from "$lib/data/api";
   import { onMount } from "svelte";
   import { derived } from "svelte/store";
 
@@ -13,14 +15,14 @@
   const toggleSidebar = (): boolean => ($sidebarOpen = !$sidebarOpen);
 
   let showDropdown = false;
-  let filteredResults: { region: string; district: string | null }[] = [];
+  let filteredResults: { regionID: string, regionName: string, districtID: string | null, districtName: string | null }[] = [];
 
   let searchTerm = "";
   $: searchTerm =
-    $selectedRegion && $selectedDistrict
-      ? `${$selectedRegion} > ${$selectedDistrict}`
-      : $selectedRegion
-        ? $selectedRegion
+    $selectedRegionName && $selectedDistrictName
+      ? `${$selectedRegionName} > ${$selectedDistrictName}`
+      : $selectedRegionName
+        ? $selectedRegionName
         : "";
 
   // Fetch regions/districts if not already loaded
@@ -38,8 +40,18 @@
   // Compute unique regions for region-only search
   const uniqueRegions = derived(
     allRegionsAndDistricts,
-    ($all: { region: string; district: string }[]) =>
-      Array.from(new Set($all.map((item) => item.region))),
+    ($all: RegionAndDistrict[]) => {
+      const uniqueRegionMap = new Map<string, string>();
+      $all.forEach(item => {
+        if (!uniqueRegionMap.has(item.regionID)) {
+          uniqueRegionMap.set(item.regionID, item.regionName);
+        }
+      });
+      return Array.from(uniqueRegionMap.entries()).map(([id, name]) => ({
+        regionID: id,
+        regionName: name
+      }));
+    }
   );
 
   function highlightMatch(text: string, term: string) {
@@ -58,24 +70,36 @@
       const term = input.toLowerCase();
       // Region/district pairs
       let pairs = $allRegionsAndDistricts.filter(
-        (item: { region: string; district: string }) =>
-          item.region.toLowerCase().includes(term) ||
-          item.district.toLowerCase().includes(term),
-      );
+        (item: RegionAndDistrict) =>
+          item.regionName.toLowerCase().includes(term) ||
+          item.districtName.toLowerCase().includes(term),
+      ).map(item => ({
+        regionID: item.regionID,
+        regionName: item.regionName,
+        districtID: item.districtID,
+        districtName: item.districtName
+      }));
+      
       // Add region-only matches for all regions that match the term
       let regionOnly = $uniqueRegions
-        .filter((region: string) => region.toLowerCase().includes(term))
-        .map((region: string) => ({ region, district: null }));
+        .filter((region) => region.regionName.toLowerCase().includes(term))
+        .map((region) => ({ 
+          regionID: region.regionID, 
+          regionName: region.regionName,
+          districtID: null as string | null, 
+          districtName: null as string | null 
+        }));
+        
       // Remove any region-only result that is already present as a pair with a matching region
       regionOnly = regionOnly.filter(
         (r) =>
           !pairs.some(
             (item) =>
-              item.region === r.region &&
-              item.district &&
-              item.district.toLowerCase().includes(term),
+              item.regionID === r.regionID &&
+              item.districtName?.toLowerCase().includes(term),
           ),
       );
+      
       filteredResults = [...regionOnly, ...pairs];
       showDropdown = filteredResults.length > 0;
       searchTerm = input;
@@ -87,21 +111,27 @@
   }
 
   const selectLocation = (
-    region: string | null,
-    district: string | null,
+    regionID: string | null,
+    districtID: string | null,
+    regionName: string | null,
+    districtName: string | null,
   ): void => {
-    $selectedRegion = region;
-    $selectedDistrict = district;
+    $selectedRegionID = regionID;
+    $selectedDistrictID = districtID;
+    $selectedRegionName = regionName;
+    $selectedDistrictName = districtName;
     showDropdown = false;
     // If only region is selected, update searchTerm accordingly
-    if (region && !district) {
-      searchTerm = region;
+    if (regionName && !districtName) {
+      searchTerm = regionName;
     }
   };
 
   const clearLocation = (): void => {
-    $selectedRegion = null;
-    $selectedDistrict = null;
+    $selectedRegionID = null;
+    $selectedDistrictID = null;
+    $selectedRegionName = null;
+    $selectedDistrictName = null;
     showDropdown = false;
   };
 </script>
@@ -174,12 +204,12 @@
             {#each filteredResults as item}
               <li
                 class="cursor-pointer px-4 py-2 hover:bg-blue-100"
-                on:mousedown={() => selectLocation(item.region, item.district)}
+                on:mousedown={() => selectLocation(item.regionID, item.districtID, item.regionName, item.districtName)}
               >
-                <span>{@html highlightMatch(item.region, searchTerm)}</span>
-                {#if item.district}
+                <span>{@html highlightMatch(item.regionName, searchTerm)}</span>
+                {#if item.districtName}
                   <span class="text-gray-400"> &gt; </span>
-                  <span>{@html highlightMatch(item.district, searchTerm)}</span>
+                  <span>{@html highlightMatch(item.districtName, searchTerm)}</span>
                 {/if}
               </li>
             {/each}

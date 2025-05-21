@@ -4,7 +4,12 @@
     getFacilityInfoById,
     type FacilityInfo,
   } from "$lib/data/api";
-  import { selectedDistrict, selectedRegion } from "$lib/stores/uiStore";
+  import { 
+    selectedRegionID, 
+    selectedDistrictID, 
+    selectedRegionName, 
+    selectedDistrictName 
+  } from "$lib/stores/uiStore";
   import {
     createColumnHelper,
     createSvelteTable,
@@ -18,7 +23,9 @@
 
   type FacilityInfoWithChildren = {
     id: string | null;
+    regionID: string | null;
     regionName: string | null;
+    districtID: string | null;
     districtName: string | null;
     facilityName: string | null;
     uniquePatients: number;
@@ -35,22 +42,26 @@
       parent: FacilityInfoWithChildren[],
       key: {
         id: string | null;
+        regionID: string | null;
         regionName: string | null;
+        districtID: string | null;
         districtName: string | null;
         facilityName: string | null;
       },
     ): FacilityInfoWithChildren => {
       let node = parent.find(
         (entry) =>
-          entry.regionName === key.regionName &&
-          entry.districtName === key.districtName &&
+          entry.regionID === key.regionID &&
+          entry.districtID === key.districtID &&
           entry.facilityName === key.facilityName,
       );
 
       if (!node) {
         node = {
           id: key.id,
+          regionID: key.regionID ?? null,
           regionName: key.regionName ?? null,
+          districtID: key.districtID ?? null,
           districtName: key.districtName ?? null,
           facilityName: key.facilityName ?? null,
           uniquePatients: 0,
@@ -67,7 +78,9 @@
       // Find or create the region node
       const regionNode = getOrCreateNode(result, {
         id: null,
+        regionID: entry.regionID,
         regionName: entry.regionName,
+        districtID: null,
         districtName: null,
         facilityName: null,
       });
@@ -75,15 +88,19 @@
       // Find or create the district node under the region
       const districtNode = getOrCreateNode(regionNode.children!, {
         id: null,
+        regionID: null,
         regionName: null,
+        districtID: entry.districtID,
         districtName: entry.districtName,
         facilityName: null,
       });
 
       // Find or create the facility node under the district
       const facilityNode = getOrCreateNode(districtNode.children!, {
-        id: entry.id,
+        id: entry.facilityID,
+        regionID: null,
         regionName: null,
+        districtID: null,
         districtName: null,
         facilityName: entry.facilityName,
       });
@@ -137,7 +154,7 @@
 
   $: (async () => {
     // Always fetch all facilities for the selected region (not just the district)
-    const facilities = await getFacilitiesByRegionDistrict($selectedRegion, null);
+    const facilities = await getFacilitiesByRegionDistrict($selectedRegionID, null);
     const dataWithNulls: Array<FacilityInfo | null> = [];
     for (const id of facilities) {
       dataWithNulls.push(await getFacilityInfoById(id));
@@ -146,9 +163,9 @@
       dataWithNulls.filter((facility) => facility !== null),
     );
     // If a district is selected, filter the region's children to only that district
-    if ($selectedDistrict && collapsed.length > 0) {
+    if ($selectedDistrictID && collapsed.length > 0) {
       collapsed[0].children = collapsed[0].children?.filter(
-        (d) => d.districtName === $selectedDistrict
+        (d) => d.districtID === $selectedDistrictID
       );
       // Auto-expand the region and the district if present
       expandedState = { '0': true };

@@ -1,16 +1,40 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import * as d3 from "d3";
-  import { selectedRegion, selectedDistrict } from "$lib/stores/uiStore";
+  import { 
+    selectedRegionID, 
+    selectedDistrictID, 
+    selectedRegionName, 
+    selectedDistrictName
+  } from "$lib/stores/uiStore";
   import {
     getPatientAndStockNumbers,
     type RegionCasesStockData,
+    getAllRegionsAndDistricts
   } from "$data/api";
 
   let data: RegionCasesStockData[] = [];
   let geoJsonData: any = null;
   let chartContainer: HTMLDivElement | null = null;
   let resizeObserver: ResizeObserver | null = null;
+  let regionDistrictMap: Map<string, { name: string, districts: Map<string, string> }> = new Map();
+
+  async function buildRegionDistrictMap() {
+    const regionsAndDistricts = await getAllRegionsAndDistricts();
+    regionsAndDistricts.forEach(item => {
+      if (!regionDistrictMap.has(item.regionID)) {
+        regionDistrictMap.set(item.regionID, { 
+          name: item.regionName, 
+          districts: new Map() 
+        });
+      }
+      
+      const region = regionDistrictMap.get(item.regionID);
+      if (region) {
+        region.districts.set(item.districtID, item.districtName);
+      }
+    });
+  }
 
   function getChartDimensions() {
     // Make the chart fill the parent div
@@ -22,56 +46,91 @@
   }
 
   // Subscribe to stores and refetch/redraw on change
-  let unsubscribeRegion: (() => void) | null = null;
-  let unsubscribeDistrict: (() => void) | null = null;
+  let unsubscribeRegionID: (() => void) | null = null;
+  let unsubscribeDistrictID: (() => void) | null = null;
+  let unsubscribeRegionName: (() => void) | null = null;
+  let unsubscribeDistrictName: (() => void) | null = null;
 
   async function getGeoJsonData(
-    region: string | null,
-    district: string | null,
+    regionID: string | null,
+    districtID: string | null,
   ) {
     let data = null;
-    if (!region) {
+    if (!regionID) {
       data = await d3.json("/geojson/tz_regions_2022.geojson");
-    } else if (region && !district) {
+    } else if (regionID && !districtID) {
       await d3.json("/geojson/tz_district_councils_2022.geojson").then((d) => {
+        // Filter features based on region ID instead of name
         const geoJsonFeatures = d.features.filter((feature: any) => {
-          return feature.properties.reg_nam === region;
+          return feature.properties.regin_d === regionID;
         });
         data = d;
         data.features = geoJsonFeatures;
       });
-    } else if (region && district) {
-      data = await d3.json("/geojson/tz_wards_2022.geojson");
-      // TODO
+    } else if (regionID && districtID) {
+      // When viewing wards, filter by district ID
+      data = await d3.json("/geojson/tz_wards_2022.geojson").then((d) => {
+        const geoJsonFeatures = d.features.filter((feature: any) => {
+          return feature.properties.concl_d === districtID;
+        });
+        return { ...d, features: geoJsonFeatures };
+      });
     }
     return data;
   }
 
-  async function fetchAndDraw(region: string | null, district: string | null) {
-    data = await getPatientAndStockNumbers(region, district);
-    geoJsonData = await getGeoJsonData(region, district);
+  async function fetchAndDraw(regionID: string | null, districtID: string | null) {
+    // Look up the corresponding names for the IDs
+    let regionName: string | null = null;
+    let districtName: string | null = null;
+    
+    if (regionID && regionDistrictMap.has(regionID)) {
+      regionName = regionDistrictMap.get(regionID)?.name || null;
+      
+      if (districtID) {
+        districtName = regionDistrictMap.get(regionID)?.districts.get(districtID) || null;
+      }
+    }
+    
+    // Update the name stores (for display purposes)
+    selectedRegionName.set(regionName);
+    selectedDistrictName.set(districtName);
+    
+    // Fetch data using IDs
+    data = await getPatientAndStockNumbers(regionID, districtID);
+    geoJsonData = await getGeoJsonData(regionID, districtID);
     drawChart();
   }
 
-  onMount(() => {
-    let currentRegion: string | null = null;
-    let currentDistrict: string | null = null;
-    unsubscribeRegion = selectedRegion.subscribe((region) => {
-      currentRegion = region;
-      fetchAndDraw(currentRegion, currentDistrict);
+  onMount(async () => {
+    // Build the region/district map for lookups
+    await buildRegionDistrictMap();
+    
+    let currentRegionID: string | null = null;
+    let currentDistrictID: string | null = null;
+    
+    unsubscribeRegionID = selectedRegionID.subscribe((regionID) => {
+      currentRegionID = regionID;
+      fetchAndDraw(currentRegionID, currentDistrictID);
     });
-    unsubscribeDistrict = selectedDistrict.subscribe((district) => {
-      currentDistrict = district;
-      fetchAndDraw(currentRegion, currentDistrict);
+    
+    unsubscribeDistrictID = selectedDistrictID.subscribe((districtID) => {
+      currentDistrictID = districtID;
+      fetchAndDraw(currentRegionID, currentDistrictID);
     });
+
     // Initial fetch
-    fetchAndDraw(currentRegion, currentDistrict);
+    fetchAndDraw(currentRegionID, currentDistrictID);
+    
     // Responsive: redraw on resize
     resizeObserver = new ResizeObserver(() => drawChart());
     if (chartContainer) resizeObserver.observe(chartContainer);
+    
     return () => {
-      unsubscribeRegion && unsubscribeRegion();
-      unsubscribeDistrict && unsubscribeDistrict();
+      unsubscribeRegionID && unsubscribeRegionID();
+      unsubscribeDistrictID && unsubscribeDistrictID();
+      unsubscribeRegionName && unsubscribeRegionName();
+      unsubscribeDistrictName && unsubscribeDistrictName();
       if (resizeObserver && chartContainer)
         resizeObserver.unobserve(chartContainer);
     };
@@ -80,11 +139,15 @@
   function handleAreaClick(d: any) {
     // If a region is already selected, clicking an area means select a district
     // If no region is selected, clicking an area means select a region
-    if ($selectedRegion && d.properties.district_name) {
-      selectedDistrict.set(d.properties.district_name ?? null);
-    } else if (d.properties.reg_name) {
-      selectedRegion.set(d.properties.reg_name ?? null);
-      selectedDistrict.set(null);
+    if ($selectedRegionID) {
+      if (d.properties.concl_d) {
+        // Use the district ID instead of name
+        selectedDistrictID.set(d.properties.concl_d);
+      }
+    } else if (d.properties.region_id) {
+      // Use the region ID instead of name
+      selectedRegionID.set(d.properties.region_id);
+      selectedDistrictID.set(null);
     }
   }
 
@@ -129,7 +192,7 @@
       // Different lookup based on whether we're viewing regions or districts
       let areaData;
 
-      if (!$selectedRegion) {
+      if (!$selectedRegionID) {
         // Region view
         areaData = data.find((r) => r.regionID === d.properties.region_id);
 
@@ -163,14 +226,14 @@
           .transition()
           .duration(100)
           .style("opacity", 1);
-      } else if ($selectedRegion && !$selectedDistrict) {
+      } else if ($selectedRegionID && !$selectedDistrictID) {
         // District view
         areaData = data.find((row) => row.districtID === d.properties.concl_d);
 
         if (!areaData) {
           tooltip
             .html(
-              `<div><strong>${d.properties.district_name || "Unknown District"}</strong></div>` +
+              `<div><strong>${d.properties.conc_nm || "Unknown District"}</strong></div>` +
                 `<div>No data for this area</span></div>`,
             )
             .style("left", mouseX + 10 + "px")
@@ -183,7 +246,7 @@
 
         const districtName =
           areaData.districtName ||
-          d.properties.district_name ||
+          d.properties.conc_nm ||
           "Unknown District";
         const vaccineStock = areaData.vaccineStock || 0;
         const uniquePatients = areaData.uniquePatients || 0;
@@ -216,14 +279,14 @@
       .attr("d", path)
       .attr("fill", (d: any) => {
         // Check if we're showing regions or districts
-        if (!$selectedRegion) {
-          // Region view - find the region data
+        if (!$selectedRegionID) {
+          // Region view - find the region data by region ID
           const areaData = data.find(
             (row) => row.regionID === d.properties.region_id,
           );
           return color(areaData?.vaccineStock || 0);
         } else {
-          // District view - find the district data by district name
+          // District view - find the district data by district ID
           const areaData = data.find(
             (row) => row.districtID === d.properties.concl_d,
           );
