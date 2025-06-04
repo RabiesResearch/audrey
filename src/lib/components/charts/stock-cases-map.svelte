@@ -262,6 +262,30 @@
           .transition()
           .duration(100)
           .style("opacity", 1);
+      } else if ($selectedRegionID && $selectedDistrictID) {
+        // Ward view
+        areaData = data.find((row) => row.wardID === d.properties.Loc_ID);
+        
+        const wardName = d.properties.ward_nm || "Unknown Ward";
+        let tooltipContent = `<div><strong>${wardName}</strong></div>`;
+        
+        if (!areaData) {
+          tooltipContent += `<div>No data for this area</div>`;
+        } else {
+          const vaccineStock = areaData.vaccineStock || 0;
+          const uniquePatients = areaData.uniquePatients || 0;
+          tooltipContent += 
+            `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
+            `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`;
+        }
+        
+        tooltip
+          .html(tooltipContent)
+          .style("left", mouseX + 10 + "px")
+          .style("top", mouseY - 50 + "px")
+          .transition()
+          .duration(100)
+          .style("opacity", 1);
       }
     }
 
