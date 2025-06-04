@@ -159,10 +159,10 @@
     function showTooltip(event: MouseEvent, d: RegionCasesStockData, type: 'patients' | 'stock') {
       let label = d.regionName;
       if (d.districtName) {
-        label += `, ${d.districtName}`;
+        label = `${d.districtName}, ${d.regionName}`;
       }
       if (d.facilityName) {
-        label += `, ${d.facilityName}`;
+        label = `${d.facilityName}, ${d.districtName}, ${d.regionName}`;
       }
       let value = type === 'patients' ? d.uniquePatients : d.vaccineStock;
       let valueLabel = type === 'patients' ? 'Unique Patients' : 'Vaccine Vials';
