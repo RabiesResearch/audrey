@@ -1,17 +1,8 @@
+import { monthlyDataCache, type MonthlyDataRow } from "$lib/stores/uiStore";
 import Papa from "papaparse";
+import { get } from "svelte/store";
 
 // types
-type MonthlyDataRow = {
-  tangis_facility_id: string;
-  region_name: string;
-  district_council_name: string;
-  facility_name: string;
-  tally_total_patients: string;
-  tally_total_vials: string;
-  submission_date: string;
-  [key: string]: string;
-};
-
 export type FacilityInfo = {
   regionID: string;
   regionName: string;
@@ -43,6 +34,16 @@ export type RegionAndDistrict = {
 
 // Utility to load and parse the CSV file (mock API)
 export async function fetchMonthlyData() {
+  // Check if we have cached data that's less than 60 minutes old
+  const cachedData = get(monthlyDataCache);
+  const now = Date.now();
+  const CACHE_DURATION = 60 * 60 * 1000; // 60 minutes in milliseconds
+
+  if (cachedData && now - cachedData.timestamp < CACHE_DURATION) {
+    // Return cached data if it's fresh
+    return cachedData.data;
+  }
+
   // Use a public path so Vite can serve the file from the static directory
   const response = await fetch("/monthly_tz_202505121436.csv");
   const csvText = await response.text();
@@ -53,7 +54,16 @@ export async function fetchMonthlyData() {
   if (errors.length) {
     throw new Error("CSV parse error: " + JSON.stringify(errors));
   }
-  return data as MonthlyDataRow[];
+
+  const parsedData = data as MonthlyDataRow[];
+
+  // Cache the data with current timestamp
+  monthlyDataCache.set({
+    data: parsedData,
+    timestamp: now,
+  });
+
+  return parsedData;
 }
 
 // Example: get all regions (unique by region_name)
@@ -148,36 +158,73 @@ async function getUniqueTanGisDistrictIds(regionName: string) {
       }
       return null;
     })
-    .filter(Boolean); // Filter out null values
+    .filter((item): item is NonNullable<typeof item> => item !== null); // Filter out null values with type guard
   // Get unique tangis_district_council_id only
-  const uniqueIds = districts
-    .filter(Boolean) // Remove empty/null ids
-    .filter(
-      (e, i) =>
-        districts.findIndex(
-          (a) => a.tangis_district_council_id === e.tangis_district_council_id,
-        ) === i,
-    );
+  const uniqueIds = districts.filter(
+    (e, i) =>
+      districts.findIndex(
+        (a) => a.tangis_district_council_id === e.tangis_district_council_id,
+      ) === i,
+  );
   return uniqueIds;
+}
+
+// Helper function to convert "MMM (M/YYYY)" format to "YYYY-MM" format
+const parseReportMonth = (reportMonth: string): string | null => {
+  if (!reportMonth) return null;
+
+  // Extract month number and year from "Apr (4/2025)" format
+  const match = reportMonth.match(/\((\d+)\/(\d+)\)/);
+  if (!match) return null;
+
+  const month = match[1].padStart(2, "0");
+  const year = match[2];
+  return `${year}-${month}`;
+};
+
+export async function getAvailableMonths() {
+  const rows = await fetchMonthlyData();
+  const months = rows.map((row) => row["tally-report_month"]).filter(Boolean);
+  const availableMonths = Array.from(new Set(months.map(parseReportMonth)))
+    .filter((month): month is string => month !== null) // Filter out null values
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime()); // Sort by date
+  return availableMonths;
 }
 
 /**
  * Get the total number of patients seen and total vaccine vials in stock
  * Returns an array of RegionCasesStockData objects, always grouped by region, district, or facility as appropriate.
- * @param regionID - The selected region ID 
+ * @param regionID - The selected region ID
  * @param districtID - The selected district ID
+ * @param selectedMonth - The selected month in YYYY-MM format (e.g., "2025-04")
  */
 export async function getPatientAndStockNumbers(
   regionID: string | null,
   districtID: string | null,
+  selectedMonth: string | null = null,
 ): Promise<Array<RegionCasesStockData>> {
   const rows = await fetchMonthlyData();
   const regionIds = await getUniqueTanGisRegionIds();
-  let districtIds = [];
-  
+
+  // Filter rows by selected month if provided
+  let filteredRows = rows;
+  if (selectedMonth) {
+    filteredRows = rows.filter((row) => {
+      const rowMonth = parseReportMonth(row["tally-report_month"]);
+      return rowMonth === selectedMonth;
+    });
+  }
+
+  let districtIds: Array<{
+    tangis_region_id: string;
+    region_name: string;
+    tangis_district_council_id: string;
+    district_council_name: string;
+  }> = [];
+
   if (regionID) {
     // Find region name from ID to use with getUniqueTanGisDistrictIds
-    const regionObj = regionIds.find(r => r.tangis_region_id === regionID);
+    const regionObj = regionIds.find((r) => r.tangis_region_id === regionID);
     if (regionObj) {
       districtIds = await getUniqueTanGisDistrictIds(regionObj.region_name);
     }
@@ -185,9 +232,11 @@ export async function getPatientAndStockNumbers(
 
   if (!regionID && !districtID) {
     // Group by region
-    const regions = Array.from(new Set(rows.map((r) => r.region_name)));
+    const regions = Array.from(new Set(filteredRows.map((r) => r.region_name)));
     return regions.map((region) => {
-      const regionRows = rows.filter((row) => row.region_name === region);
+      const regionRows = filteredRows.filter(
+        (row) => row.region_name === region,
+      );
       let uniquePatients = 0;
       let vaccineStock = 0;
       for (const row of regionRows) {
@@ -204,20 +253,20 @@ export async function getPatientAndStockNumbers(
     });
   } else if (regionID && !districtID) {
     // Group by district within the region - but now we filter by region ID
-    const regionObj = regionIds.find(r => r.tangis_region_id === regionID);
+    const regionObj = regionIds.find((r) => r.tangis_region_id === regionID);
     if (!regionObj) return [];
-    
+
     const regionName = regionObj.region_name;
     const districts = Array.from(
       new Set(
-        rows
+        filteredRows
           .filter((r) => r.tangis_region_id === regionID)
           .map((r) => r.district_council_name),
       ),
     );
-    
+
     return districts.map((district) => {
-      const districtRows = rows.filter(
+      const districtRows = filteredRows.filter(
         (row) =>
           row.tangis_region_id === regionID &&
           row.district_council_name === district,
@@ -241,18 +290,20 @@ export async function getPatientAndStockNumbers(
     });
   } else if (regionID && districtID) {
     // Group by facility within the district - filter by region ID and district ID
-    const regionObj = regionIds.find(r => r.tangis_region_id === regionID);
+    const regionObj = regionIds.find((r) => r.tangis_region_id === regionID);
     if (!regionObj) return [];
-    
+
     const regionName = regionObj.region_name;
-    const districtObj = districtIds.find(d => d.tangis_district_council_id === districtID);
+    const districtObj = districtIds.find(
+      (d) => d.tangis_district_council_id === districtID,
+    );
     if (!districtObj) return [];
-    
+
     const districtName = districtObj.district_council_name;
-    
+
     const facilities = Array.from(
       new Set(
-        rows
+        filteredRows
           .filter(
             (r) =>
               r.tangis_region_id === regionID &&
@@ -261,9 +312,9 @@ export async function getPatientAndStockNumbers(
           .map((r) => r.facility_name),
       ),
     );
-    
+
     return facilities.map((facility) => {
-      const facilityRows = rows.filter(
+      const facilityRows = filteredRows.filter(
         (row) =>
           row.tangis_region_id === regionID &&
           row.tangis_district_council_id === districtID &&

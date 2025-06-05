@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import * as d3 from "d3";
   import {
     selectedRegionID,
     selectedDistrictID,
     selectedRegionName,
     selectedDistrictName,
+    selectedMonth,
   } from "$lib/stores/uiStore";
   import {
     getPatientAndStockNumbers,
@@ -55,12 +56,14 @@
   let unsubscribeDistrictID: (() => void) | null = null;
   let unsubscribeRegionName: (() => void) | null = null;
   let unsubscribeDistrictName: (() => void) | null = null;
+  let unsubscribeSelectedMonth: (() => void) | null = null;
 
   async function fetchAndDraw(
     regionID: string | null,
     districtID: string | null,
+    selectedMonthValue: string,
   ) {
-    data = await getPatientAndStockNumbers(regionID, districtID);
+    data = await getPatientAndStockNumbers(regionID, districtID, selectedMonthValue);
     drawChart();
   }
 
@@ -70,32 +73,37 @@
 
     let currentRegionID: string | null = null;
     let currentDistrictID: string | null = null;
+    let currentSelectedMonth: string = '';
 
     unsubscribeRegionID = selectedRegionID.subscribe((regionID) => {
       currentRegionID = regionID;
-      fetchAndDraw(currentRegionID, currentDistrictID);
+      fetchAndDraw(currentRegionID, currentDistrictID, currentSelectedMonth);
     });
 
     unsubscribeDistrictID = selectedDistrictID.subscribe((districtID) => {
       currentDistrictID = districtID;
-      fetchAndDraw(currentRegionID, currentDistrictID);
+      fetchAndDraw(currentRegionID, currentDistrictID, currentSelectedMonth);
     });
 
-    // Initial fetch
-    fetchAndDraw(currentRegionID, currentDistrictID);
+    unsubscribeSelectedMonth = selectedMonth.subscribe((month) => {
+      currentSelectedMonth = month;
+      fetchAndDraw(currentRegionID, currentDistrictID, currentSelectedMonth);
+    });
+
+    // Initial fetch - will be triggered by subscriptions above
 
     // Responsive: redraw on resize
     resizeObserver = new ResizeObserver(() => drawChart());
     if (chartContainer) resizeObserver.observe(chartContainer);
+  });
 
-    return () => {
-      unsubscribeRegionID && unsubscribeRegionID();
-      unsubscribeDistrictID && unsubscribeDistrictID();
-      unsubscribeRegionName && unsubscribeRegionName();
-      unsubscribeDistrictName && unsubscribeDistrictName();
-      if (resizeObserver && chartContainer)
-        resizeObserver.unobserve(chartContainer);
-    };
+  // Handle cleanup when component is destroyed
+  onDestroy(() => {
+    unsubscribeRegionID && unsubscribeRegionID();
+    unsubscribeDistrictID && unsubscribeDistrictID();
+    unsubscribeSelectedMonth && unsubscribeSelectedMonth();
+    if (resizeObserver && chartContainer)
+      resizeObserver.unobserve(chartContainer);
   });
 
   function handleBarClick(d: RegionCasesStockData) {
