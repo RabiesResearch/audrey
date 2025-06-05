@@ -59,7 +59,7 @@
 </script>
 
 <aside
-  class="fixed -right-64 top-0 z-10 h-[100vh] w-64 transform bg-white shadow-md transition-transform duration-300"
+  class="fixed -right-64 top-0 z-50 h-[100vh] w-64 transform bg-white shadow-md transition-transform duration-300"
   class:translate-x-0={!$sidebarOpen}
   class:-translate-x-full={$sidebarOpen}
 >
