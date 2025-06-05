@@ -71,6 +71,54 @@
     return 'bg-red-100 text-red-800';
   }
 
+  function getTooltipText(item: CompletenessData, month: string): string {
+    if (!item.children) return '';
+    
+    const totalFacilities = getTotalFacilities(item);
+    const reportingFacilities = getReportingFacilities(item, month);
+    
+    const type = item.regionName && !item.districtName ? 'region' : 'district';
+    return `${reportingFacilities} of ${totalFacilities} health facilities in this ${type} have reported`;
+  }
+
+  function getTotalFacilities(item: CompletenessData): number {
+    if (!item.children) return 0;
+    
+    let total = 0;
+    for (const child of item.children) {
+      if (child.children) {
+        // This is a district, count its facilities
+        total += child.children.length;
+      } else {
+        // This is a facility
+        total++;
+      }
+    }
+    return total;
+  }
+
+  function getReportingFacilities(item: CompletenessData, month: string): number {
+    if (!item.children) return 0;
+    
+    let reporting = 0;
+    for (const child of item.children) {
+      if (child.children) {
+        // This is a district, count its reporting facilities
+        for (const facility of child.children) {
+          if (facility.monthlyCompleteness[month]) {
+            reporting++;
+          }
+        }
+      } else {
+        // This is a facility
+        if (child.monthlyCompleteness[month]) {
+          reporting++;
+        }
+      }
+    }
+    return reporting;
+  }
+
   async function loadCompletenessData() {
     try {
       isLoading = true;
@@ -178,9 +226,20 @@
                 {@const completeness = item.monthlyCompleteness?.[month.key]}
                 <td class="whitespace-nowrap px-2 py-2 text-center">
                   {#if completeness !== undefined}
-                    <span class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}">
-                      {formatCompleteness(completeness)}
-                    </span>
+                    {#if typeof completeness === 'number' && item.children}
+                      <!-- Region/District with tooltip -->
+                      <span 
+                        class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}" 
+                        title={getTooltipText(item, month.key)}
+                      >
+                        {formatCompleteness(completeness)}
+                      </span>
+                    {:else}
+                      <!-- Facility without tooltip -->
+                      <span class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}">
+                        {formatCompleteness(completeness)}
+                      </span>
+                    {/if}
                   {:else}
                     <span class="text-gray-400">-</span>
                   {/if}
@@ -231,9 +290,20 @@
                     {@const completeness = child.monthlyCompleteness?.[month.key]}
                     <td class="whitespace-nowrap px-2 py-2 text-center">
                       {#if completeness !== undefined}
-                        <span class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}">
-                          {formatCompleteness(completeness)}
-                        </span>
+                        {#if typeof completeness === 'number' && child.children}
+                          <!-- District with tooltip -->
+                          <span 
+                            class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}" 
+                            title={getTooltipText(child, month.key)}
+                          >
+                            {formatCompleteness(completeness)}
+                          </span>
+                        {:else}
+                          <!-- Facility without tooltip -->
+                          <span class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}">
+                            {formatCompleteness(completeness)}
+                          </span>
+                        {/if}
                       {:else}
                         <span class="text-gray-400">-</span>
                       {/if}
