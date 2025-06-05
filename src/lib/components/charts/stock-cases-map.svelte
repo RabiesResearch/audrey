@@ -372,26 +372,23 @@
       .attr("x", legendX)
       .attr("y", legendY - 10)
       .attr("fill", "#334155")
-      .style("font-size", "12px")
-      .style("font-weight", "bold")
+      .classed("font-semibold", true)
       .text("Vaccine Vials Stock");
 
     // Add legend labels (min and max)
     svg
       .append("text")
       .attr("x", legendX)
-      .attr("y", legendY + legendHeight + 15)
+      .attr("y", legendY + legendHeight + 20)
       .attr("fill", "#334155")
-      .style("font-size", "10px")
       .attr("text-anchor", "start")
       .text("0");
 
     svg
       .append("text")
       .attr("x", legendX + legendWidth)
-      .attr("y", legendY + legendHeight + 15)
+      .attr("y", legendY + legendHeight + 20)
       .attr("fill", "#334155")
-      .style("font-size", "10px")
       .attr("text-anchor", "end")
       .text((d3.max(data, (d) => d.vaccineStock) || 0).toLocaleString());
   }

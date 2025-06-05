@@ -5,17 +5,24 @@
     selectedRegionID,
     selectedDistrictID,
     selectedRegionName,
-    selectedDistrictName
+    selectedDistrictName,
   } from "$lib/stores/uiStore";
-  import { getAllRegionsAndDistricts, type RegionAndDistrict } from "$lib/data/api";
+  import {
+    getAllRegionsAndDistricts,
+    type RegionAndDistrict,
+  } from "$lib/data/api";
   import { onMount } from "svelte";
   import { derived } from "svelte/store";
 
-  // Toggle sidebar
   const toggleSidebar = (): boolean => ($sidebarOpen = !$sidebarOpen);
 
   let showDropdown = false;
-  let filteredResults: { regionID: string, regionName: string, districtID: string | null, districtName: string | null }[] = [];
+  let filteredResults: {
+    regionID: string;
+    regionName: string;
+    districtID: string | null;
+    districtName: string | null;
+  }[] = [];
 
   let searchTerm = "";
   $: searchTerm =
@@ -42,16 +49,16 @@
     allRegionsAndDistricts,
     ($all: RegionAndDistrict[]) => {
       const uniqueRegionMap = new Map<string, string>();
-      $all.forEach(item => {
+      $all.forEach((item) => {
         if (!uniqueRegionMap.has(item.regionID)) {
           uniqueRegionMap.set(item.regionID, item.regionName);
         }
       });
       return Array.from(uniqueRegionMap.entries()).map(([id, name]) => ({
         regionID: id,
-        regionName: name
+        regionName: name,
       }));
-    }
+    },
   );
 
   function highlightMatch(text: string, term: string) {
@@ -69,27 +76,29 @@
     if (input.length > 0) {
       const term = input.toLowerCase();
       // Region/district pairs
-      let pairs = $allRegionsAndDistricts.filter(
-        (item: RegionAndDistrict) =>
-          item.regionName.toLowerCase().includes(term) ||
-          item.districtName.toLowerCase().includes(term),
-      ).map(item => ({
-        regionID: item.regionID,
-        regionName: item.regionName,
-        districtID: item.districtID,
-        districtName: item.districtName
-      }));
-      
+      let pairs = $allRegionsAndDistricts
+        .filter(
+          (item: RegionAndDistrict) =>
+            item.regionName.toLowerCase().includes(term) ||
+            item.districtName.toLowerCase().includes(term),
+        )
+        .map((item) => ({
+          regionID: item.regionID,
+          regionName: item.regionName,
+          districtID: item.districtID,
+          districtName: item.districtName,
+        }));
+
       // Add region-only matches for all regions that match the term
       let regionOnly = $uniqueRegions
         .filter((region) => region.regionName.toLowerCase().includes(term))
-        .map((region) => ({ 
-          regionID: region.regionID, 
+        .map((region) => ({
+          regionID: region.regionID,
           regionName: region.regionName,
-          districtID: null as string | null, 
-          districtName: null as string | null 
+          districtID: null as string | null,
+          districtName: null as string | null,
         }));
-        
+
       // Remove any region-only result that is already present as a pair with a matching region
       regionOnly = regionOnly.filter(
         (r) =>
@@ -99,7 +108,7 @@
               item.districtName?.toLowerCase().includes(term),
           ),
       );
-      
+
       filteredResults = [...regionOnly, ...pairs];
       showDropdown = filteredResults.length > 0;
       searchTerm = input;
@@ -127,6 +136,17 @@
     }
   };
 
+  function selectLocationByIndex(index: number) {
+    const item = filteredResults[index];
+    selectLocation(
+      item.regionID,
+      item.districtID,
+      item.regionName,
+      item.districtName,
+    );
+    activeIndex = -1;
+  }
+
   const clearLocation = (): void => {
     $selectedRegionID = null;
     $selectedDistrictID = null;
@@ -134,38 +154,25 @@
     $selectedDistrictName = null;
     showDropdown = false;
   };
+
+  let activeIndex = -1;
+  let listboxId = "location-listbox";
 </script>
 
 <header class="sticky top-0 z-10 bg-white shadow-sm">
-  <div class="container-dashboard flex items-center justify-between py-4">
-    <div class="flex items-center">
-      <button
-        class="mr-4 text-gray-500 hover:text-gray-700 focus:outline-none"
-        on:click={toggleSidebar}
-        aria-label="Toggle sidebar"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-6 w-6"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4 6h16M4 12h16M4 18h16"
-          />
-        </svg>
-      </button>
-
-      <div class="text-primary-700 text-lg font-semibold">
-        Tanzania Rabies Dashboard
-      </div>
+  <div class="mx-20 flex items-center justify-between py-4">
+    <div class="flex items-center space-x-4">
+      <img
+        src="/audrey.svg"
+        alt="Tanzania Rabies Dashboard - Project Audrey Logo"
+        class="h-16 w-auto"
+      />
+      <h1 class="text-primary-700 text-xl font-semibold">
+        Rabies Situation in Tanzania
+      </h1>
     </div>
 
-    <div class="mx-8 max-w-lg flex-1">
+    <div class="mx-8 max-w-xl w-full text-lg">
       <div class="relative">
         <input
           type="text"
@@ -175,6 +182,15 @@
           on:input={handleSearch}
           on:focus={() => (showDropdown = filteredResults.length > 0)}
           on:blur={() => setTimeout(() => (showDropdown = false), 150)}
+          role="combobox"
+          aria-expanded={showDropdown}
+          aria-haspopup="listbox"
+          aria-controls={listboxId}
+          aria-activedescendant={activeIndex >= 0
+            ? `option-${activeIndex}`
+            : ""}
+          aria-autocomplete="list"
+          aria-label="Search for regions or districts"
         />
         {#if searchTerm}
           <button
@@ -199,17 +215,29 @@
         {/if}
         {#if showDropdown}
           <ul
+            id={listboxId}
             class="absolute left-0 right-0 z-20 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg"
+            role="listbox"
+            aria-label="Location search results"
           >
-            {#each filteredResults as item}
+            {#each filteredResults as item, index}
               <li
-                class="cursor-pointer px-4 py-2 hover:bg-blue-100"
-                on:mousedown={() => selectLocation(item.regionID, item.districtID, item.regionName, item.districtName)}
+                id="option-{index}"
+                role="option"
+                class="cursor-pointer px-4 py-2 hover:bg-blue-100 {activeIndex ===
+                index
+                  ? 'bg-blue-100'
+                  : ''}"
+                aria-selected={activeIndex === index}
+                on:mousedown={() => selectLocationByIndex(index)}
+                on:mouseenter={() => (activeIndex = index)}
               >
                 <span>{@html highlightMatch(item.regionName, searchTerm)}</span>
                 {#if item.districtName}
                   <span class="text-gray-400"> &gt; </span>
-                  <span>{@html highlightMatch(item.districtName, searchTerm)}</span>
+                  <span
+                    >{@html highlightMatch(item.districtName, searchTerm)}</span
+                  >
                 {/if}
               </li>
             {/each}
@@ -217,9 +245,27 @@
         {/if}
       </div>
     </div>
-
-    <div>
-      <button class="btn btn-primary">Sign In</button>
+    <div class="flex items-center">
+      <button
+        class="mr-4 text-gray-500 hover:text-gray-700 focus:outline-none"
+        on:click={toggleSidebar}
+        aria-label="Toggle sidebar"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
     </div>
   </div>
 </header>
