@@ -31,8 +31,19 @@ export type RegionAndDistrict = {
   districtName: string;
 };
 
-// Utility to load and parse the CSV file (mock API)
+export type CompletenessData = {
+  id: string | null;
+  regionID: string | null;
+  regionName: string | null;
+  districtID: string | null;
+  districtName: string | null;
+  facilityID: string | null;
+  facilityName: string | null;
+  monthlyCompleteness: { [month: string]: number | boolean };
+  children?: CompletenessData[];
+};
 
+// Utility to load and parse the CSV file (mock API)
 
 // Example: get all regions (unique by region_name)
 export async function getRegionsFromMonthlyData() {
@@ -331,5 +342,180 @@ export async function getAllRegionsAndDistricts(): Promise<
     }
   }
   allRegionsAndDistrictsCache = result;
+  return result;
+}
+
+/**
+ * Get completeness data for facilities, districts, and regions for the past 12 months
+ * Returns hierarchical data with monthly completeness values
+ */
+export async function getCompletenessData(
+  regionID: string | null = null,
+  districtID: string | null = null,
+): Promise<CompletenessData[]> {
+  const rows = await fetchMonthlyData();
+  
+  // Generate last 12 months from current date (same logic as frontend)
+  const now = new Date();
+  const last12Months: string[] = [];
+  for (let i = 11; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    last12Months.push(monthKey);
+  }
+
+  // Create a map to track which facilities reported in which months
+  const facilityReports = new Map<string, Set<string>>();
+
+  for (const row of rows) {
+    const month = parseReportMonth(row["tally-report_month"]);
+    if (month && last12Months.includes(month)) {
+      const facilityId = row.tangis_facility_id;
+      if (!facilityReports.has(facilityId)) {
+        facilityReports.set(facilityId, new Set());
+      }
+      facilityReports.get(facilityId)!.add(month);
+    }
+  }
+
+  // Get all unique facilities that match the filter criteria
+  const filteredRows = rows.filter(
+    (row: MonthlyDataRow) =>
+      (regionID == null || row.tangis_region_id === regionID) &&
+      (districtID == null || row.tangis_district_council_id === districtID),
+  );
+
+  const facilityMap = new Map<
+    string,
+    {
+      facilityID: string;
+      facilityName: string;
+      regionID: string;
+      regionName: string;
+      districtID: string;
+      districtName: string;
+    }
+  >();
+
+  // Collect unique facilities
+  for (const row of filteredRows) {
+    if (!facilityMap.has(row.tangis_facility_id)) {
+      facilityMap.set(row.tangis_facility_id, {
+        facilityID: row.tangis_facility_id,
+        facilityName: row.facility_name,
+        regionID: row.tangis_region_id,
+        regionName: row.region_name,
+        districtID: row.tangis_district_council_id,
+        districtName: row.district_council_name,
+      });
+    }
+  }
+
+  // Build hierarchical structure
+  const result: CompletenessData[] = [];
+  const regionMap = new Map<string, CompletenessData>();
+  const districtMap = new Map<string, CompletenessData>();
+
+  for (const facility of facilityMap.values()) {
+    // Create facility completeness data
+    const facilityCompleteness: { [month: string]: boolean } = {};
+    const facilityReportSet =
+      facilityReports.get(facility.facilityID) || new Set();
+
+    for (const month of last12Months) {
+      facilityCompleteness[month] = facilityReportSet.has(month);
+    }
+
+    const facilityData: CompletenessData = {
+      id: facility.facilityID,
+      regionID: null,
+      regionName: null,
+      districtID: null,
+      districtName: null,
+      facilityID: facility.facilityID,
+      facilityName: facility.facilityName,
+      monthlyCompleteness: facilityCompleteness,
+    };
+
+    // Get or create district
+    const districtKey = `${facility.regionID}-${facility.districtID}`;
+    let districtData = districtMap.get(districtKey);
+    if (!districtData) {
+      districtData = {
+        id: null,
+        regionID: null,
+        regionName: null,
+        districtID: facility.districtID,
+        districtName: facility.districtName,
+        facilityID: null,
+        facilityName: null,
+        monthlyCompleteness: {},
+        children: [],
+      };
+      districtMap.set(districtKey, districtData);
+    }
+    districtData.children!.push(facilityData);
+
+    // Get or create region
+    let regionData = regionMap.get(facility.regionID);
+    if (!regionData) {
+      regionData = {
+        id: null,
+        regionID: facility.regionID,
+        regionName: facility.regionName,
+        districtID: null,
+        districtName: null,
+        facilityID: null,
+        facilityName: null,
+        monthlyCompleteness: {},
+        children: [],
+      };
+      regionMap.set(facility.regionID, regionData);
+      result.push(regionData);
+    }
+
+    // Add district to region if not already there
+    if (
+      !regionData.children!.find((d) => d.districtID === facility.districtID)
+    ) {
+      regionData.children!.push(districtData);
+    }
+  }
+
+  // Calculate district and region completeness percentages
+  for (const regionData of result) {
+    for (const month of last12Months) {
+      let totalFacilities = 0;
+      let reportingFacilities = 0;
+
+      for (const districtData of regionData.children!) {
+        let districtTotal = 0;
+        let districtReporting = 0;
+
+        for (const facilityData of districtData.children!) {
+          districtTotal++;
+          if (facilityData.monthlyCompleteness[month]) {
+            districtReporting++;
+          }
+        }
+
+        totalFacilities += districtTotal;
+        reportingFacilities += districtReporting;
+
+        // Calculate district percentage
+        districtData.monthlyCompleteness[month] =
+          districtTotal > 0
+            ? Math.round((districtReporting / districtTotal) * 100)
+            : 0;
+      }
+
+      // Calculate region percentage
+      regionData.monthlyCompleteness[month] =
+        totalFacilities > 0
+          ? Math.round((reportingFacilities / totalFacilities) * 100)
+          : 0;
+    }
+  }
+
   return result;
 }

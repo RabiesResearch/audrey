@@ -19,6 +19,7 @@ export async function fetchMonthlyData() {
   const { data, errors } = Papa.parse(csvText, {
     header: true,
     skipEmptyLines: true,
+    dynamicTyping: true,
   });
   if (errors.length) {
     throw new Error("CSV parse error: " + JSON.stringify(errors));
