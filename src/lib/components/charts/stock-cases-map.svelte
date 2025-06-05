@@ -13,6 +13,7 @@
     type RegionCasesStockData,
     getAllRegionsAndDistricts
   } from "$data/api";
+  import type { Region } from "$data/mockData";
 
   let data: RegionCasesStockData[] = [];
   let geoJsonData: any = null;
@@ -63,19 +64,21 @@
     } else if (regionID && !districtID) {
       await d3.json("/geojson/tz_district_councils_2022.geojson").then((d) => {
         // Filter features based on region ID instead of name
-        const geoJsonFeatures = d.features.filter((feature: any) => {
+        const geoJson = d as { features: any[]; [key: string]: any };
+        const geoJsonFeatures = geoJson.features.filter((feature: any) => {
           return feature.properties.regin_d === regionID;
         });
-        data = d;
+        data = geoJson;
         data.features = geoJsonFeatures;
       });
     } else if (regionID && districtID) {
       // When viewing wards, filter by district ID
       data = await d3.json("/geojson/tz_wards_2022.geojson").then((d) => {
-        const geoJsonFeatures = d.features.filter((feature: any) => {
+        const geoJson = d as { features: any[]; [key: string]: any };
+        const geoJsonFeatures = geoJson.features.filter((feature: any) => {
           return feature.properties.concl_d === districtID;
         });
-        return { ...d, features: geoJsonFeatures };
+        return { ...geoJson, features: geoJsonFeatures };
       });
     }
     return data;
@@ -201,7 +204,7 @@
       const [mouseX, mouseY] = d3.pointer(event, chartContainer);
 
       // Different lookup based on whether we're viewing regions or districts
-      let areaData;
+      let areaData: RegionCasesStockData | undefined;
 
       if (!$selectedRegionID) {
         // Region view
@@ -275,20 +278,22 @@
           .style("opacity", 1);
       } else if ($selectedRegionID && $selectedDistrictID) {
         // Ward view
-        areaData = data.find((row) => row.wardID === d.properties.Loc_ID);
+        areaData = undefined // TODO data.find((row) => row.wardID === d.properties.Loc_ID);
         
         const wardName = d.properties.ward_nm || "Unknown Ward";
         let tooltipContent = `<div><strong>${wardName}</strong></div>`;
         
-        if (!areaData) {
-          tooltipContent += `<div>No data for this area</div>`;
-        } else {
-          const vaccineStock = areaData.vaccineStock || 0;
-          const uniquePatients = areaData.uniquePatients || 0;
-          tooltipContent += 
-            `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
-            `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`;
-        }
+        tooltipContent += `<div>No data for this area</div>`;
+        // TODO make the following work?
+        // if (!areaData) {
+        //   tooltipContent += `<div>No data for this area</div>`;
+        // } else {
+        //   const vaccineStock = areaData.vaccineStock || 0;
+        //   const uniquePatients = areaData.uniquePatients || 0;
+        //   tooltipContent += 
+        //     `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
+        //     `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`;
+        // }
         
         tooltip
           .html(tooltipContent)
@@ -311,7 +316,7 @@
       .data(geoJsonData.features)
       .enter()
       .append("path")
-      .attr("d", path)
+      .attr("d", (d: any) => path(d))
       .attr("fill", (d: any) => {
         // Check if we're showing regions or districts
         if (!$selectedRegionID) {
