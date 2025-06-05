@@ -35,7 +35,11 @@ function linkTanGisFiles() {
               fs.copyFileSync(sourcePath, destPath);
               console.log(`Copied ${file} to static directory`);
             } catch (error) {
-              console.error(`Error copying ${file}: ${error.message}`);
+              if (error instanceof Error) {
+                console.error(`Error copying ${file}: ${error.message}`);
+              } else {
+                console.error(`Error copying ${file}:`, error);
+              }
             }
           }
         });
