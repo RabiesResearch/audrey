@@ -162,7 +162,7 @@
 
 <header class="sticky top-0 z-10 bg-white shadow-sm">
   <div class="mx-20 flex items-center justify-between py-4">
-    <div class="flex items-center space-x-4">
+    <a href="/" class="flex items-center space-x-4">
       <img
         src="/audrey.svg"
         alt="Tanzania Rabies Dashboard - Project Audrey Logo"
@@ -171,9 +171,9 @@
       <h1 class="text-primary-700 text-xl font-semibold">
         Rabies Situation in Tanzania
       </h1>
-    </div>
+    </a>
 
-    <div class="mx-8 max-w-xl w-full text-lg">
+    <div class="mx-8 w-full max-w-xl text-lg">
       <div class="relative">
         <input
           type="text"
