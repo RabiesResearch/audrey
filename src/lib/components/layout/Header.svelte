@@ -153,6 +153,7 @@
     $selectedRegionName = null;
     $selectedDistrictName = null;
     showDropdown = false;
+    searchTerm = "";
   };
 
   let activeIndex = -1;

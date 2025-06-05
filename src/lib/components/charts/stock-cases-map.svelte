@@ -1,36 +1,73 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import * as d3 from "d3";
-  import { 
-    selectedRegionID, 
-    selectedDistrictID, 
-    selectedRegionName, 
+  import {
+    selectedRegionID,
+    selectedDistrictID,
+    selectedRegionName,
     selectedDistrictName,
-    selectedMonth
+    selectedMonth,
   } from "$lib/stores/uiStore";
   import {
     getPatientAndStockNumbers,
     type RegionCasesStockData,
-    getAllRegionsAndDistricts
+    getAllRegionsAndDistricts,
   } from "$data/api";
-  import type { Region } from "$data/mockData";
+
+  interface Region {
+    id: string;
+    name: string;
+    vaccineStock: number;
+    bites: {
+      lowRisk: number;
+      highRisk: number;
+      deaths: number;
+    };
+    districts: District[];
+  }
+
+  interface District {
+    id: string;
+    name: string;
+    vaccineStock: number;
+    bites: {
+      lowRisk: number;
+      highRisk: number;
+      deaths: number;
+    };
+    healthFacilities: HealthFacility[];
+  }
+
+  interface HealthFacility {
+    id: string;
+    name: string;
+    vaccineStock: number;
+    bites: {
+      lowRisk: number;
+      highRisk: number;
+      deaths: number;
+    };
+  }
 
   let data: RegionCasesStockData[] = [];
   let geoJsonData: any = null;
   let chartContainer: HTMLDivElement | null = null;
   let resizeObserver: ResizeObserver | null = null;
-  let regionDistrictMap: Map<string, { name: string, districts: Map<string, string> }> = new Map();
+  let regionDistrictMap: Map<
+    string,
+    { name: string; districts: Map<string, string> }
+  > = new Map();
 
   async function buildRegionDistrictMap() {
     const regionsAndDistricts = await getAllRegionsAndDistricts();
-    regionsAndDistricts.forEach(item => {
+    regionsAndDistricts.forEach((item) => {
       if (!regionDistrictMap.has(item.regionID)) {
-        regionDistrictMap.set(item.regionID, { 
-          name: item.regionName, 
-          districts: new Map() 
+        regionDistrictMap.set(item.regionID, {
+          name: item.regionName,
+          districts: new Map(),
         });
       }
-      
+
       const region = regionDistrictMap.get(item.regionID);
       if (region) {
         region.districts.set(item.districtID, item.districtName);
@@ -84,25 +121,34 @@
     return data;
   }
 
-  async function fetchAndDraw(regionID: string | null, districtID: string | null, selectedMonthValue: string) {
+  async function fetchAndDraw(
+    regionID: string | null,
+    districtID: string | null,
+    selectedMonthValue: string,
+  ) {
     // Look up the corresponding names for the IDs
     let regionName: string | null = null;
     let districtName: string | null = null;
-    
+
     if (regionID && regionDistrictMap.has(regionID)) {
       regionName = regionDistrictMap.get(regionID)?.name || null;
-      
+
       if (districtID) {
-        districtName = regionDistrictMap.get(regionID)?.districts.get(districtID) || null;
+        districtName =
+          regionDistrictMap.get(regionID)?.districts.get(districtID) || null;
       }
     }
-    
+
     // Update the name stores (for display purposes)
     selectedRegionName.set(regionName);
     selectedDistrictName.set(districtName);
-    
+
     // Fetch data using IDs
-    data = await getPatientAndStockNumbers(regionID, districtID, selectedMonthValue);
+    data = await getPatientAndStockNumbers(
+      regionID,
+      districtID,
+      selectedMonthValue,
+    );
     geoJsonData = await getGeoJsonData(regionID, districtID);
     drawChart();
   }
@@ -110,16 +156,16 @@
   onMount(async () => {
     // Build the region/district map for lookups
     await buildRegionDistrictMap();
-    
+
     let currentRegionID: string | null = null;
     let currentDistrictID: string | null = null;
-    let currentSelectedMonth: string = '';
-    
+    let currentSelectedMonth: string = "";
+
     unsubscribeRegionID = selectedRegionID.subscribe((regionID) => {
       currentRegionID = regionID;
       fetchAndDraw(currentRegionID, currentDistrictID, currentSelectedMonth);
     });
-    
+
     unsubscribeDistrictID = selectedDistrictID.subscribe((districtID) => {
       currentDistrictID = districtID;
       fetchAndDraw(currentRegionID, currentDistrictID, currentSelectedMonth);
@@ -131,7 +177,7 @@
     });
 
     // Initial fetch - will be triggered by subscriptions above
-    
+
     // Responsive: redraw on resize
     resizeObserver = new ResizeObserver(() => drawChart());
     if (chartContainer) resizeObserver.observe(chartContainer);
@@ -173,11 +219,12 @@
     const path = d3.geoPath().projection(projection);
 
     // Color scale for vials - handle empty data case
-    const maxVaccineStock = data.length > 0 ? (d3.max(data, (d) => d.vaccineStock) || 0) : 0;
+    const maxVaccineStock =
+      data.length > 0 ? d3.max(data, (d) => d.vaccineStock) || 0 : 0;
     const color = d3
       .scaleSequential(d3.interpolateBlues)
       .domain([0, Math.max(maxVaccineStock, 1)]); // Ensure domain is at least [0, 1]
-    
+
     // Define a special color for areas with no data
     const noDataColor = "#f3f4f6"; // Light gray color for no data areas
 
@@ -259,9 +306,7 @@
         }
 
         const districtName =
-          areaData.districtName ||
-          d.properties.conc_nm ||
-          "Unknown District";
+          areaData.districtName || d.properties.conc_nm || "Unknown District";
         const vaccineStock = areaData.vaccineStock || 0;
         const uniquePatients = areaData.uniquePatients || 0;
 
@@ -278,11 +323,11 @@
           .style("opacity", 1);
       } else if ($selectedRegionID && $selectedDistrictID) {
         // Ward view
-        areaData = undefined // TODO data.find((row) => row.wardID === d.properties.Loc_ID);
-        
+        areaData = undefined; // TODO data.find((row) => row.wardID === d.properties.Loc_ID);
+
         const wardName = d.properties.ward_nm || "Unknown Ward";
         let tooltipContent = `<div><strong>${wardName}</strong></div>`;
-        
+
         tooltipContent += `<div>No data for this area</div>`;
         // TODO make the following work?
         // if (!areaData) {
@@ -290,11 +335,11 @@
         // } else {
         //   const vaccineStock = areaData.vaccineStock || 0;
         //   const uniquePatients = areaData.uniquePatients || 0;
-        //   tooltipContent += 
+        //   tooltipContent +=
         //     `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
         //     `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`;
         // }
-        
+
         tooltip
           .html(tooltipContent)
           .style("left", mouseX + 10 + "px")
@@ -407,7 +452,7 @@
       .attr("fill", "#334155")
       .attr("text-anchor", "end")
       .text(maxVaccineStock.toLocaleString());
-    
+
     // Add "No Data" indicator if there's no data
     if (data.length === 0) {
       svg
@@ -419,7 +464,7 @@
         .attr("fill", noDataColor)
         .attr("stroke", "#334155")
         .attr("stroke-width", 1);
-        
+
       svg
         .append("text")
         .attr("x", legendX + 20)
