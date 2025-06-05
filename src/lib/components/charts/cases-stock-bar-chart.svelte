@@ -120,7 +120,15 @@
   function drawChart() {
     if (!chartContainer) return;
     chartContainer.innerHTML = "";
-    if (!data.length) return;
+    
+    // If no data, show a message instead of rendering empty chart
+    if (!data.length) {
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'flex items-center justify-center h-full text-gray-500 text-lg';
+      messageDiv.textContent = 'No data available for the selected filters';
+      chartContainer.appendChild(messageDiv);
+      return;
+    }
 
     const margin = { top: 40, right: 100, bottom: 80, left: 80 };
     const { width, height } = getChartDimensions();

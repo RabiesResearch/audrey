@@ -161,7 +161,7 @@
   function drawChart() {
     if (!chartContainer) return;
     chartContainer.innerHTML = "";
-    if (!data.length) return;
+    if (!geoJsonData) return; // Only return if we don't have geographic data
 
     const { width, height } = getChartDimensions();
 
@@ -169,10 +169,14 @@
     const projection = d3.geoMercator().fitSize([width, height], geoJsonData);
     const path = d3.geoPath().projection(projection);
 
-    // Color scale for vials
+    // Color scale for vials - handle empty data case
+    const maxVaccineStock = data.length > 0 ? (d3.max(data, (d) => d.vaccineStock) || 0) : 0;
     const color = d3
       .scaleSequential(d3.interpolateBlues)
-      .domain([0, d3.max(data, (d) => d.vaccineStock) || 1]);
+      .domain([0, Math.max(maxVaccineStock, 1)]); // Ensure domain is at least [0, 1]
+    
+    // Define a special color for areas with no data
+    const noDataColor = "#f3f4f6"; // Light gray color for no data areas
 
     const svg = d3
       .select(chartContainer)
@@ -315,13 +319,13 @@
           const areaData = data.find(
             (row) => row.regionID === d.properties.region_id,
           );
-          return color(areaData?.vaccineStock || 0);
+          return areaData ? color(areaData.vaccineStock || 0) : noDataColor;
         } else {
           // District view - find the district data by district ID
           const areaData = data.find(
             (row) => row.districtID === d.properties.concl_d,
           );
-          return color(areaData?.vaccineStock || 0);
+          return areaData ? color(areaData.vaccineStock || 0) : noDataColor;
         }
       })
       .attr("stroke", "#334155")
@@ -360,7 +364,7 @@
     linearGradient
       .append("stop")
       .attr("offset", "100%")
-      .attr("stop-color", color(d3.max(data, (d) => d.vaccineStock) || 1));
+      .attr("stop-color", color(maxVaccineStock));
 
     // Draw the colored rectangle
     svg
@@ -397,7 +401,28 @@
       .attr("y", legendY + legendHeight + 20)
       .attr("fill", "#334155")
       .attr("text-anchor", "end")
-      .text((d3.max(data, (d) => d.vaccineStock) || 0).toLocaleString());
+      .text(maxVaccineStock.toLocaleString());
+    
+    // Add "No Data" indicator if there's no data
+    if (data.length === 0) {
+      svg
+        .append("rect")
+        .attr("x", legendX)
+        .attr("y", legendY + legendHeight + 35)
+        .attr("width", 16)
+        .attr("height", 16)
+        .attr("fill", noDataColor)
+        .attr("stroke", "#334155")
+        .attr("stroke-width", 1);
+        
+      svg
+        .append("text")
+        .attr("x", legendX + 20)
+        .attr("y", legendY + legendHeight + 35 + 12)
+        .attr("fill", "#334155")
+        .attr("text-anchor", "start")
+        .text("No data available");
+    }
   }
 </script>
 
