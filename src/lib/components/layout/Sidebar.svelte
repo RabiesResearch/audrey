@@ -2,6 +2,7 @@
   import { getAvailableMonths } from "$data/api";
   import { selectedMonth, sidebarOpen } from "$lib/stores/uiStore";
   import { onMount } from "svelte";
+  import { version } from '$app/environment';
 
   const toggleSidebar = (): boolean => ($sidebarOpen = !$sidebarOpen);
 
@@ -35,9 +36,11 @@
   let monthDropdownOpen = false;
 
   let monthOptions: string[] = [];
+  let latestDataMonth: string = '';
   onMount(async () => {
     monthOptions = await getAvailableMonths();
     $selectedMonth = monthOptions[0];
+    latestDataMonth = monthOptions[0] || '';
   });
 
   const selectMonth = (month: string) => {
@@ -60,7 +63,8 @@
   class:translate-x-0={!$sidebarOpen}
   class:-translate-x-full={$sidebarOpen}
 >
-  <div class="mb-4 p-4">
+  <div class="flex flex-col h-full">
+    <div class="flex-1 p-4 pb-20"> <!-- Add bottom padding to prevent overlap with footer -->
     <div class="mb-4 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-gray-700">Dashboards</h2>
       <button
@@ -108,7 +112,9 @@
       </ul>
     </nav>
 
-    <div class="absolute bottom-0 p-4">
+    <!-- Month Selector -->
+    <div class="mt-6">
+      <div class="block text-sm font-medium text-gray-700 mb-2">Filter by Month</div>
       <div class="relative">
         <button
           on:click={() => (monthDropdownOpen = !monthDropdownOpen)}
@@ -163,6 +169,19 @@
             {/each}
           </div>
         {/if}
+      </div>
+    </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-gray-50 px-4 py-3">
+      <div class="text-center">
+        <div class="text-xs text-gray-500 mb-1">
+          Project Audrey v{version}
+        </div>
+        <div class="text-xs text-gray-400">
+          Latest data: {getMonthLabel(latestDataMonth)}
+        </div>
       </div>
     </div>
   </div>
