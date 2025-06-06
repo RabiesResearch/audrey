@@ -65,6 +65,7 @@
     districtID: string | null,
     selectedMonthValue: string,
   ) {
+    console.log('Bar Chart: fetchAndDraw called with', { regionID, districtID, selectedMonthValue });
     isLoading = true;
 
     try {
@@ -73,7 +74,8 @@
         districtID,
         selectedMonthValue,
       );
-      drawChart();
+      console.log('Bar Chart: fetchAndDraw - data fetched', data.length, 'items');
+      // Don't call drawChart() directly - let reactive statement handle it
     } finally {
       isLoading = false;
     }
@@ -83,7 +85,8 @@
   function setupResizeObserver() {
     if (chartContainer && !resizeObserver) {
       resizeObserver = new ResizeObserver(() => {
-        if (!isLoading && data.length > 0) {
+        console.log('Bar Chart: ResizeObserver triggered, chartContainer:', !!chartContainer, 'isLoading:', isLoading, 'data.length:', data.length);
+        if (chartContainer && !isLoading && data.length > 0) {
           drawChart();
         }
       });
@@ -94,6 +97,12 @@
   // Reactive statement to set up resize observer when chartContainer is ready
   $: if (chartContainer) {
     setupResizeObserver();
+  }
+
+  // Reactive statement to redraw chart when container and data are ready
+  $: if (chartContainer && data && !isLoading) {
+    console.log('Bar Chart: Reactive redraw triggered, data.length:', data.length);
+    drawChart();
   }
 
   onMount(async () => {
@@ -143,7 +152,17 @@
   }
 
   function drawChart() {
-    if (!chartContainer) return;
+    console.log('Bar Chart: drawChart called, chartContainer:', !!chartContainer, 'data.length:', data?.length || 0);
+    
+    if (!chartContainer) {
+      console.log('Bar Chart: drawChart aborted - no chartContainer');
+      return;
+    }
+    
+    if (!data || data.length === 0) {
+      console.log('Bar Chart: drawChart - no data, showing message');
+    }
+    
     chartContainer.innerHTML = "";
 
     // If no data, show a message instead of rendering empty chart
@@ -155,6 +174,8 @@
       chartContainer.appendChild(messageDiv);
       return;
     }
+
+    console.log('Bar Chart: drawChart - starting chart render with', data.length, 'data points');
 
     const margin = { top: 40, right: 100, bottom: 80, left: 80 };
     const { width, height } = getChartDimensions();
