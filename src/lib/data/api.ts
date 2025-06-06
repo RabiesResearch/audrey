@@ -1,5 +1,6 @@
 import { type MonthlyDataRow } from "$lib/stores/uiStore";
-import { fetchMonthlyData } from "$lib/data/mockData";
+import { fetchMonthlyData } from "$data/liveDB";
+// import { fetchMonthlyData as fetchMockData } from "$data/mockDB";
 
 // types
 export type FacilityInfo = {
@@ -76,8 +77,8 @@ export async function getFacilityInfoById(
   return {
     facilityID: firstValidRow.tangis_facility_id,
     facilityName: firstValidRow.facility_name,
-    uniquePatients: Number(firstValidRow["tally-total_patients"] ?? 0),
-    vaccineVialStock: Number(firstValidRow["tally-total_vials"] ?? 0),
+    uniquePatients: Number(firstValidRow.tally_total_patients ?? 0),
+    vaccineVialStock: Number(firstValidRow.tally_total_vials ?? 0),
     regionID: firstValidRow.tangis_region_id,
     regionName: firstValidRow.region_name,
     districtID: firstValidRow.tangis_district_council_id,
@@ -163,7 +164,7 @@ const parseReportMonth = (reportMonth: string): string | null => {
 
 export async function getAvailableMonths() {
   const rows = await fetchMonthlyData();
-  const months = rows.map((row) => row["tally-report_month"]).filter(Boolean);
+  const months = rows.map((row) => row.tally_report_month).filter(Boolean);
   const availableMonths = Array.from(new Set(months.map(parseReportMonth)))
     .filter((month): month is string => month !== null) // Filter out null values
     .sort((a, b) => new Date(b).getTime() - new Date(a).getTime()); // Sort by date
@@ -189,7 +190,7 @@ export async function getPatientAndStockNumbers(
   let filteredRows = rows;
   if (selectedMonth) {
     filteredRows = rows.filter((row) => {
-      const rowMonth = parseReportMonth(row["tally-report_month"]);
+      const rowMonth = parseReportMonth(row.tally_report_month);
       return rowMonth === selectedMonth;
     });
   }
@@ -219,8 +220,8 @@ export async function getPatientAndStockNumbers(
       let uniquePatients = 0;
       let vaccineStock = 0;
       for (const row of regionRows) {
-        uniquePatients += Number(row["tally-total_patients"] ?? 0);
-        vaccineStock += Number(row["tally-total_vials"] ?? 0);
+        uniquePatients += Number(row.tally_total_patients ?? 0);
+        vaccineStock += Number(row.tally_total_vials ?? 0);
       }
       return {
         regionID: regionIds.find((r) => r.region_name === region)
@@ -253,8 +254,8 @@ export async function getPatientAndStockNumbers(
       let uniquePatients = 0;
       let vaccineStock = 0;
       for (const row of districtRows) {
-        uniquePatients += Number(row["tally-total_patients"] ?? 0);
-        vaccineStock += Number(row["tally-total_vials"] ?? 0);
+        uniquePatients += Number(row.tally_total_patients ?? 0);
+        vaccineStock += Number(row.tally_total_vials ?? 0);
       }
       return {
         regionID: regionID,
@@ -302,8 +303,8 @@ export async function getPatientAndStockNumbers(
       let uniquePatients = 0;
       let vaccineStock = 0;
       for (const row of facilityRows) {
-        uniquePatients += Number(row["tally-total_patients"] ?? 0);
-        vaccineStock += Number(row["tally-total_vials"] ?? 0);
+        uniquePatients += Number(row.tally_total_patients ?? 0);
+        vaccineStock += Number(row.tally_total_vials ?? 0);
       }
       return {
         regionID: regionID,
@@ -354,7 +355,7 @@ export async function getCompletenessData(
   districtID: string | null = null,
 ): Promise<CompletenessData[]> {
   const rows = await fetchMonthlyData();
-  
+
   // Generate last 12 months from current date (same logic as frontend)
   const now = new Date();
   const last12Months: string[] = [];
@@ -368,7 +369,7 @@ export async function getCompletenessData(
   const facilityReports = new Map<string, Set<string>>();
 
   for (const row of rows) {
-    const month = parseReportMonth(row["tally-report_month"]);
+    const month = parseReportMonth(row.tally_report_month);
     if (month && last12Months.includes(month)) {
       const facilityId = row.tangis_facility_id;
       if (!facilityReports.has(facilityId)) {

@@ -63,7 +63,11 @@
     districtID: string | null,
     selectedMonthValue: string,
   ) {
-    data = await getPatientAndStockNumbers(regionID, districtID, selectedMonthValue);
+    data = await getPatientAndStockNumbers(
+      regionID,
+      districtID,
+      selectedMonthValue,
+    );
     drawChart();
   }
 
@@ -73,7 +77,7 @@
 
     let currentRegionID: string | null = null;
     let currentDistrictID: string | null = null;
-    let currentSelectedMonth: string = '';
+    let currentSelectedMonth: string = "";
 
     unsubscribeRegionID = selectedRegionID.subscribe((regionID) => {
       currentRegionID = regionID;
@@ -120,12 +124,13 @@
   function drawChart() {
     if (!chartContainer) return;
     chartContainer.innerHTML = "";
-    
+
     // If no data, show a message instead of rendering empty chart
     if (!data.length) {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = 'flex items-center justify-center h-full text-gray-500 text-lg';
-      messageDiv.textContent = 'No data available for the selected filters';
+      const messageDiv = document.createElement("div");
+      messageDiv.className =
+        "flex items-center justify-center h-full text-gray-500 text-lg";
+      messageDiv.textContent = "No data available for the selected filters";
       chartContainer.appendChild(messageDiv);
       return;
     }

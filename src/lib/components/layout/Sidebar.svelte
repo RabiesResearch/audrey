@@ -2,7 +2,7 @@
   import { getAvailableMonths } from "$data/api";
   import { selectedMonth, sidebarOpen } from "$lib/stores/uiStore";
   import { onMount } from "svelte";
-  import { version } from '$app/environment';
+  import { version } from "$app/environment";
 
   const toggleSidebar = (): boolean => ($sidebarOpen = !$sidebarOpen);
 
@@ -36,11 +36,11 @@
   let monthDropdownOpen = false;
 
   let monthOptions: string[] = [];
-  let latestDataMonth: string = '';
+  let latestDataMonth: string = "";
   onMount(async () => {
     monthOptions = await getAvailableMonths();
     $selectedMonth = monthOptions[0];
-    latestDataMonth = monthOptions[0] || '';
+    latestDataMonth = monthOptions[0] || "";
   });
 
   const selectMonth = (month: string) => {
@@ -51,10 +51,22 @@
   const getMonthLabel = (monthValue: string) => {
     const option = new Date(monthValue);
     const months = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
-    return option ? `${months[option.getMonth()]} ${option.getFullYear()}` : "Select Month";
+    return option
+      ? `${months[option.getMonth()]} ${option.getFullYear()}`
+      : "Select Month";
   };
 </script>
 
@@ -63,120 +75,125 @@
   class:translate-x-0={!$sidebarOpen}
   class:-translate-x-full={$sidebarOpen}
 >
-  <div class="flex flex-col h-full">
-    <div class="flex-1 p-4 pb-20"> <!-- Add bottom padding to prevent overlap with footer -->
-    <div class="mb-4 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-700">Dashboards</h2>
-      <button
-        class="text-gray-400 hover:text-gray-600"
-        on:click={toggleSidebar}
-        aria-label="Close Menu"
-        tabindex="-1"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
+  <div class="flex h-full flex-col">
+    <div class="flex-1 p-4 pb-20">
+      <!-- Add bottom padding to prevent overlap with footer -->
+      <div class="mb-4 flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-700">Dashboards</h2>
+        <button
+          class="text-gray-400 hover:text-gray-600"
+          on:click={toggleSidebar}
+          aria-label="Close Menu"
+          tabindex="-1"
         >
-          <path
-            fill-rule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-            clip-rule="evenodd"
-          />
-        </svg>
-      </button>
-    </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
 
-    <nav>
-      <ul class="space-y-2">
-        {#each sections as section}
-          <li>
-            <button
-              on:click={() => scrollToSection(section.id)}
-              class="hover:bg-primary-50 hover:text-primary-700 flex w-full items-center rounded-md px-3 py-2 text-gray-700 transition-colors"
-            >
+      <nav>
+        <ul class="space-y-2">
+          {#each sections as section}
+            <li>
+              <button
+                on:click={() => scrollToSection(section.id)}
+                class="hover:bg-primary-50 hover:text-primary-700 flex w-full items-center rounded-md px-3 py-2 text-gray-700 transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="mr-3 h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  {@html icons[`${section.icon}`]}
+                </svg>
+                <span>{section.label}</span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+      </nav>
+
+      <!-- Month Selector -->
+      <div class="mt-6">
+        <div class="mb-2 block text-sm font-medium text-gray-700">
+          Filter by Month
+        </div>
+        <div class="relative">
+          <button
+            on:click={() => (monthDropdownOpen = !monthDropdownOpen)}
+            class="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-1"
+          >
+            <span class="flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                class="mr-3 h-5 w-5"
+                class="mr-2 h-4 w-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                {@html icons[`${section.icon}`]}
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
-              <span>{section.label}</span>
-            </button>
-          </li>
-        {/each}
-      </ul>
-    </nav>
-
-    <!-- Month Selector -->
-    <div class="mt-6">
-      <div class="block text-sm font-medium text-gray-700 mb-2">Filter by Month</div>
-      <div class="relative">
-        <button
-          on:click={() => (monthDropdownOpen = !monthDropdownOpen)}
-          class="focus:border-primary-500 focus:ring-primary-500 flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-1"
-        >
-          <span class="flex items-center">
+              {getMonthLabel($selectedMonth)}
+            </span>
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="mr-2 h-4 w-4"
+              class="h-4 w-4 transform transition-transform"
+              class:rotate-180={monthDropdownOpen}
               fill="none"
-              viewBox="0 0 24 24"
               stroke="currentColor"
+              viewBox="0 0 24 24"
             >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                d="M19 9l-7 7-7-7"
               />
             </svg>
-            {getMonthLabel($selectedMonth)}
-          </span>
-          <svg
-            class="h-4 w-4 transform transition-transform"
-            class:rotate-180={monthDropdownOpen}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
+          </button>
 
-        {#if monthDropdownOpen}
-          <div
-            class="absolute bottom-full left-0 right-0 mb-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg"
-          >
-            {#each monthOptions as month}
-              <button
-                on:click={() => selectMonth(month)}
-                class="hover:bg-primary-50 hover:text-primary-700 block w-full px-3 py-2 text-left text-sm text-gray-700"
-                class:bg-primary-50={$selectedMonth === month}
-                class:text-primary-700={$selectedMonth === month}
-              >
-                {getMonthLabel(month)}
-              </button>
-            {/each}
-          </div>
-        {/if}
+          {#if monthDropdownOpen}
+            <div
+              class="absolute bottom-full left-0 right-0 mb-1 max-h-48 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg"
+            >
+              {#each monthOptions as month}
+                <button
+                  on:click={() => selectMonth(month)}
+                  class="hover:bg-primary-50 hover:text-primary-700 block w-full px-3 py-2 text-left text-sm text-gray-700"
+                  class:bg-primary-50={$selectedMonth === month}
+                  class:text-primary-700={$selectedMonth === month}
+                >
+                  {getMonthLabel(month)}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
       </div>
-    </div>
     </div>
 
     <!-- Footer -->
-    <div class="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-gray-50 px-4 py-3">
+    <div
+      class="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-gray-50 px-4 py-3"
+    >
       <div class="text-center">
-        <div class="text-xs text-gray-500 mb-1">
+        <div class="mb-1 text-xs text-gray-500">
           Project Audrey v{version}
         </div>
         <div class="text-xs text-gray-400">

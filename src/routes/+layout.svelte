@@ -6,7 +6,7 @@
   import { sidebarOpen } from "$lib/stores/uiStore";
 </script>
 
-<Toaster/>
+<Toaster />
 
 <div class="flex min-h-screen flex-col">
   <Header />

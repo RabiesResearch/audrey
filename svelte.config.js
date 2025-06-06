@@ -1,6 +1,5 @@
-import { readFileSync } from 'fs';
-import { version } from 'os';
-import { fileURLToPath } from 'url';
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
 
 // get dashboard version and define it for display in the sidebar
 const file = fileURLToPath(new URL("package.json", import.meta.url));

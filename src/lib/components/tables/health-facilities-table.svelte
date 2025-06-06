@@ -4,11 +4,11 @@
     getFacilityInfoById,
     type FacilityInfo,
   } from "$lib/data/api";
-  import { 
-    selectedRegionID, 
-    selectedDistrictID, 
-    selectedRegionName, 
-    selectedDistrictName 
+  import {
+    selectedRegionID,
+    selectedDistrictID,
+    selectedRegionName,
+    selectedDistrictName,
   } from "$lib/stores/uiStore";
   import {
     createColumnHelper,
@@ -154,7 +154,10 @@
 
   $: (async () => {
     // Always fetch all facilities for the selected region (not just the district)
-    const facilities = await getFacilitiesByRegionDistrict($selectedRegionID, null);
+    const facilities = await getFacilitiesByRegionDistrict(
+      $selectedRegionID,
+      null,
+    );
     const dataWithNulls: Array<FacilityInfo | null> = [];
     for (const id of facilities) {
       dataWithNulls.push(await getFacilityInfoById(id));
@@ -165,15 +168,15 @@
     // If a district is selected, filter the region's children to only that district
     if ($selectedDistrictID && collapsed.length > 0) {
       collapsed[0].children = collapsed[0].children?.filter(
-        (d) => d.districtID === $selectedDistrictID
+        (d) => d.districtID === $selectedDistrictID,
       );
       // Auto-expand the region and the district if present
-      expandedState = { '0': true };
+      expandedState = { "0": true };
       if (collapsed[0].children && collapsed[0].children.length > 0) {
-        expandedState['0.0'] = true;
+        expandedState["0.0"] = true;
       }
     } else if (collapsed.length === 1) {
-      expandedState = { '0': true };
+      expandedState = { "0": true };
     }
     data = collapsed;
   })();

@@ -19,12 +19,12 @@
     const targetPage = document.getElementById(pageIds[currentPageIndex]);
     if (targetPage) {
       // Account for sticky header height
-      const headerHeight = document.querySelector('header')?.offsetHeight || 0;
+      const headerHeight = document.querySelector("header")?.offsetHeight || 0;
       const targetPosition = targetPage.offsetTop - headerHeight;
-      
+
       window.scrollTo({
         top: targetPosition,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
     }
   }
@@ -32,9 +32,11 @@
   // Show notifications example
   onMount(() => {
     // Automatically discover all page elements
-    const pageElements = document.querySelectorAll('.page[id]');
-    pageIds = Array.from(pageElements).map(el => el.id).filter(id => id.length > 0);
-    
+    const pageElements = document.querySelectorAll(".page[id]");
+    pageIds = Array.from(pageElements)
+      .map((el) => el.id)
+      .filter((id) => id.length > 0);
+
     // Example notification
     setTimeout(() => {
       toast.warning("Vaccine stocks are running low in Arusha region", {
@@ -44,7 +46,7 @@
     }, 3000);
 
     // Set up intersection observer to track current page
-    const headerHeight = document.querySelector('header')?.offsetHeight || 0;
+    const headerHeight = document.querySelector("header")?.offsetHeight || 0;
     const observerOptions = {
       root: null,
       rootMargin: `-${headerHeight}px 0px -50% 0px`,
@@ -83,8 +85,8 @@
 </svelte:head>
 
 <div class="container-dashboard">
-  <Map/>
-  <Completeness/>
+  <Map />
+  <Completeness />
 
   <!-- Floating Navigation Button -->
   <div class="fixed bottom-6 right-6 z-40 flex flex-col gap-2">

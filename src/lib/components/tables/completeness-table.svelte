@@ -4,10 +4,7 @@
     getAvailableMonths,
     type CompletenessData,
   } from "$lib/data/api";
-  import {
-    selectedDistrictID,
-    selectedRegionID
-  } from "$lib/stores/uiStore";
+  import { selectedDistrictID, selectedRegionID } from "$lib/stores/uiStore";
   import { onMount, onDestroy } from "svelte";
   import { ChevronDown, ChevronRight } from "@steeze-ui/heroicons";
   import { Icon } from "@steeze-ui/svelte-icon";
@@ -24,17 +21,17 @@
   function generateMonthColumns() {
     const now = new Date();
     const months = [];
-    
+
     for (let i = 11; i >= 0; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const displayStr = date.toLocaleDateString('en-GB', { 
-        month: 'short', 
-        year: 'numeric' 
+      const displayStr = date.toLocaleDateString("en-GB", {
+        month: "short",
+        year: "numeric",
       });
-      const apiKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const apiKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       months.push({ display: displayStr, key: apiKey });
     }
-    
+
     monthColumns = months;
   }
 
@@ -54,36 +51,36 @@
   }
 
   function formatCompleteness(value: number | boolean): string {
-    if (typeof value === 'boolean') {
-      return value ? '✓' : '✗';
+    if (typeof value === "boolean") {
+      return value ? "✓" : "✗";
     }
     return `${Math.round(value)}%`;
   }
 
   function getCompletenessColor(value: number | boolean): string {
-    if (typeof value === 'boolean') {
-      return value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+    if (typeof value === "boolean") {
+      return value ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
     }
-    
-    if (value >= 80) return 'bg-green-100 text-green-800';
-    if (value >= 60) return 'bg-yellow-100 text-yellow-800';
-    if (value >= 40) return 'bg-orange-100 text-orange-800';
-    return 'bg-red-100 text-red-800';
+
+    if (value >= 80) return "bg-green-100 text-green-800";
+    if (value >= 60) return "bg-yellow-100 text-yellow-800";
+    if (value >= 40) return "bg-orange-100 text-orange-800";
+    return "bg-red-100 text-red-800";
   }
 
   function getTooltipText(item: CompletenessData, month: string): string {
-    if (!item.children) return '';
-    
+    if (!item.children) return "";
+
     const totalFacilities = getTotalFacilities(item);
     const reportingFacilities = getReportingFacilities(item, month);
-    
-    const type = item.regionName && !item.districtName ? 'region' : 'district';
+
+    const type = item.regionName && !item.districtName ? "region" : "district";
     return `${reportingFacilities} of ${totalFacilities} health facilities in this ${type} have reported`;
   }
 
   function getTotalFacilities(item: CompletenessData): number {
     if (!item.children) return 0;
-    
+
     let total = 0;
     for (const child of item.children) {
       if (child.children) {
@@ -97,9 +94,12 @@
     return total;
   }
 
-  function getReportingFacilities(item: CompletenessData, month: string): number {
+  function getReportingFacilities(
+    item: CompletenessData,
+    month: string,
+  ): number {
     if (!item.children) return 0;
-    
+
     let reporting = 0;
     for (const child of item.children) {
       if (child.children) {
@@ -123,16 +123,15 @@
     try {
       isLoading = true;
       error = null;
-      
+
       // Get available months for reference
       availableMonths = await getAvailableMonths();
 
       // Fetch completeness data
       data = await getCompletenessData($selectedRegionID, $selectedDistrictID);
-      
     } catch (err) {
-      console.error('Error loading completeness data:', err);
-      error = err instanceof Error ? err.message : 'Unknown error';
+      console.error("Error loading completeness data:", err);
+      error = err instanceof Error ? err.message : "Unknown error";
     } finally {
       isLoading = false;
     }
@@ -162,10 +161,12 @@
 </script>
 
 <div class="p-4">
-  <h2 class="text-xl font-bold mb-4">Data Completeness</h2>
-  
+  <h2 class="mb-4 text-xl font-bold">Data Completeness</h2>
+
   {#if isLoading}
-    <div class="p-4 text-center text-gray-500">Loading completeness data...</div>
+    <div class="p-4 text-center text-gray-500">
+      Loading completeness data...
+    </div>
   {:else if error}
     <div class="p-4 text-center text-red-500">Error: {error}</div>
   {:else if data.length > 0}
@@ -173,11 +174,15 @@
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-4 py-2 text-left text-sm font-medium uppercase tracking-wider text-gray-500">
+            <th
+              class="px-4 py-2 text-left text-sm font-medium uppercase tracking-wider text-gray-500"
+            >
               Location
             </th>
             {#each monthColumns as month}
-              <th class="px-2 py-2 text-center text-sm font-medium uppercase tracking-wider text-gray-500">
+              <th
+                class="px-2 py-2 text-center text-sm font-medium uppercase tracking-wider text-gray-500"
+              >
                 {month.display}
               </th>
             {/each}
@@ -188,12 +193,12 @@
             {@const itemKey = getItemKey(item)}
             {@const isExpanded = expandedItems.has(itemKey)}
             {@const hasChildren = item.children && item.children.length > 0}
-            
+
             <tr>
               <td class="whitespace-nowrap px-4 py-2">
                 <div class="flex items-center">
                   {#if hasChildren}
-                    <button 
+                    <button
                       class="mr-2"
                       on:click={() => toggleExpanded(itemKey)}
                     >
@@ -206,10 +211,12 @@
                   {:else}
                     <span class="w-6"></span>
                   {/if}
-                  
+
                   <div>
                     <div class="font-medium text-gray-900">
-                      {item.facilityName || item.districtName || item.regionName}
+                      {item.facilityName ||
+                        item.districtName ||
+                        item.regionName}
                     </div>
                     {#if item.facilityName}
                       <div class="text-sm text-gray-500">Facility</div>
@@ -221,22 +228,28 @@
                   </div>
                 </div>
               </td>
-              
+
               {#each monthColumns as month}
                 {@const completeness = item.monthlyCompleteness?.[month.key]}
                 <td class="whitespace-nowrap px-2 py-2 text-center">
                   {#if completeness !== undefined}
-                    {#if typeof completeness === 'number' && item.children}
+                    {#if typeof completeness === "number" && item.children}
                       <!-- Region/District with tooltip -->
-                      <span 
-                        class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}" 
+                      <span
+                        class="inline-block rounded px-2 py-1 text-xs font-medium {getCompletenessColor(
+                          completeness,
+                        )}"
                         title={getTooltipText(item, month.key)}
                       >
                         {formatCompleteness(completeness)}
                       </span>
                     {:else}
                       <!-- Facility without tooltip -->
-                      <span class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}">
+                      <span
+                        class="inline-block rounded px-2 py-1 text-xs font-medium {getCompletenessColor(
+                          completeness,
+                        )}"
+                      >
                         {formatCompleteness(completeness)}
                       </span>
                     {/if}
@@ -246,18 +259,19 @@
                 </td>
               {/each}
             </tr>
-            
+
             {#if hasChildren && isExpanded}
               {#each item.children || [] as child}
                 {@const childKey = getItemKey(child)}
                 {@const childExpanded = expandedItems.has(childKey)}
-                {@const childHasChildren = child.children && child.children.length > 0}
-                
+                {@const childHasChildren =
+                  child.children && child.children.length > 0}
+
                 <tr>
                   <td class="whitespace-nowrap px-4 py-2">
-                    <div class="flex items-center ml-6">
+                    <div class="ml-6 flex items-center">
                       {#if childHasChildren}
-                        <button 
+                        <button
                           class="mr-2"
                           on:click={() => toggleExpanded(childKey)}
                         >
@@ -270,10 +284,12 @@
                       {:else}
                         <span class="w-6"></span>
                       {/if}
-                      
+
                       <div>
                         <div class="font-medium text-gray-900">
-                          {child.facilityName || child.districtName || child.regionName}
+                          {child.facilityName ||
+                            child.districtName ||
+                            child.regionName}
                         </div>
                         {#if child.facilityName}
                           <div class="text-sm text-gray-500">Facility</div>
@@ -285,22 +301,29 @@
                       </div>
                     </div>
                   </td>
-                  
+
                   {#each monthColumns as month}
-                    {@const completeness = child.monthlyCompleteness?.[month.key]}
+                    {@const completeness =
+                      child.monthlyCompleteness?.[month.key]}
                     <td class="whitespace-nowrap px-2 py-2 text-center">
                       {#if completeness !== undefined}
-                        {#if typeof completeness === 'number' && child.children}
+                        {#if typeof completeness === "number" && child.children}
                           <!-- District with tooltip -->
-                          <span 
-                            class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}" 
+                          <span
+                            class="inline-block rounded px-2 py-1 text-xs font-medium {getCompletenessColor(
+                              completeness,
+                            )}"
                             title={getTooltipText(child, month.key)}
                           >
                             {formatCompleteness(completeness)}
                           </span>
                         {:else}
                           <!-- Facility without tooltip -->
-                          <span class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}">
+                          <span
+                            class="inline-block rounded px-2 py-1 text-xs font-medium {getCompletenessColor(
+                              completeness,
+                            )}"
+                          >
                             {formatCompleteness(completeness)}
                           </span>
                         {/if}
@@ -310,27 +333,34 @@
                     </td>
                   {/each}
                 </tr>
-                
+
                 {#if childHasChildren && childExpanded}
                   {#each child.children || [] as grandchild}
                     <tr>
                       <td class="whitespace-nowrap px-4 py-2">
-                        <div class="flex items-center ml-12">
+                        <div class="ml-12 flex items-center">
                           <span class="w-6"></span>
                           <div>
                             <div class="font-medium text-gray-900">
-                              {grandchild.facilityName || grandchild.districtName || grandchild.regionName}
+                              {grandchild.facilityName ||
+                                grandchild.districtName ||
+                                grandchild.regionName}
                             </div>
                             <div class="text-sm text-gray-500">Facility</div>
                           </div>
                         </div>
                       </td>
-                      
+
                       {#each monthColumns as month}
-                        {@const completeness = grandchild.monthlyCompleteness?.[month.key]}
+                        {@const completeness =
+                          grandchild.monthlyCompleteness?.[month.key]}
                         <td class="whitespace-nowrap px-2 py-2 text-center">
                           {#if completeness !== undefined}
-                            <span class="inline-block px-2 py-1 rounded text-xs font-medium {getCompletenessColor(completeness)}">
+                            <span
+                              class="inline-block rounded px-2 py-1 text-xs font-medium {getCompletenessColor(
+                                completeness,
+                              )}"
+                            >
                               {formatCompleteness(completeness)}
                             </span>
                           {:else}
@@ -347,20 +377,28 @@
         </tbody>
       </table>
     </div>
-    
+
     <div class="mt-4 text-sm text-gray-600">
       <p><strong>Legend:</strong></p>
-      <div class="flex flex-wrap gap-4 mt-2">
-        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+      <div class="mt-2 flex flex-wrap gap-4">
+        <span
+          class="inline-flex items-center rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800"
+        >
           ≥80% / ✓ Complete
         </span>
-        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+        <span
+          class="inline-flex items-center rounded bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800"
+        >
           60-79% Partial
         </span>
-        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-orange-100 text-orange-800">
+        <span
+          class="inline-flex items-center rounded bg-orange-100 px-2 py-1 text-xs font-medium text-orange-800"
+        >
           40-59% Low
         </span>
-        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+        <span
+          class="inline-flex items-center rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800"
+        >
           &lt;40% / ✗ Poor
         </span>
       </div>

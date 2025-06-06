@@ -5,11 +5,15 @@ import { writable } from "svelte/store";
 export type MonthlyDataRow = {
   tangis_facility_id: string;
   region_name: string;
+  tangis_region_id: string;
   district_council_name: string;
+  tangis_district_council_id: string;
   facility_name: string;
   tally_total_patients: string;
   tally_total_vials: string;
   submission_date: string;
+  report_full_date: string;
+  tally_report_month: string;
   [key: string]: string;
 };
 
@@ -34,5 +38,5 @@ export const monthlyDataCache = writable<CachedMonthlyData | null>(null);
 
 // Month selector states
 const currentMonth = new Date();
-const currentMonthValue = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+const currentMonthValue = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;
 export const selectedMonth = writable<string>(currentMonthValue);
