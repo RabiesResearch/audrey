@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
-  import * as d3 from "d3";
   import {
-    selectedRegionID,
-    selectedDistrictID,
-    selectedRegionName,
-    selectedDistrictName,
-    selectedMonth,
-  } from "$lib/stores/uiStore";
-  import {
+    getAllRegionsAndDistricts,
     getPatientAndStockNumbers,
     type RegionCasesStockData,
-    getAllRegionsAndDistricts,
   } from "$data/api";
   import LoadingSpinner from "$lib/components/ui/LoadingSpinner.svelte";
+  import {
+    selectedDistrictID,
+    selectedDistrictName,
+    selectedMonth,
+    selectedRegionID,
+    selectedRegionName,
+  } from "$lib/stores/uiStore";
+  import * as d3 from "d3";
+  import { onDestroy, onMount } from "svelte";
 
   interface Region {
     id: string;
@@ -129,7 +129,6 @@
     selectedMonthValue: string,
   ) {
     isLoading = true;
-    
     try {
       // Look up the corresponding names for the IDs
       let regionName: string | null = null;
@@ -155,7 +154,8 @@
         selectedMonthValue,
       );
       geoJsonData = await getGeoJsonData(regionID, districtID);
-      drawChart();
+      console.debug("Data fetched, chart will be drawn by reactive statement");
+      // drawChart(); // Remove this - let the reactive statement handle it
     } finally {
       isLoading = false;
     }
@@ -165,7 +165,8 @@
   function setupResizeObserver() {
     if (chartContainer && !resizeObserver) {
       resizeObserver = new ResizeObserver(() => {
-        if (!isLoading && geoJsonData) {
+        if (!isLoading && geoJsonData && chartContainer) {
+          console.debug("Resize triggered, redrawing chart");
           drawChart();
         }
       });
@@ -176,6 +177,12 @@
   // Reactive statement to set up resize observer when chartContainer is ready
   $: if (chartContainer) {
     setupResizeObserver();
+  }
+
+  // Reactive statement to redraw chart when container becomes available
+  $: if (chartContainer && geoJsonData && !isLoading) {
+    console.debug("Chart container and data available, drawing chart");
+    drawChart();
   }
 
   onMount(async () => {
@@ -229,9 +236,18 @@
   }
 
   function drawChart() {
-    if (!chartContainer) return;
+    if (!chartContainer) {
+      console.warn("Chart container is null, will retry when available");
+      return;
+    }
+
+    if (!geoJsonData) {
+      console.warn("No GeoJSON data available");
+      return; // Only return if we don't have geographic data
+    }
+
+    // Clear previous chart content
     chartContainer.innerHTML = "";
-    if (!geoJsonData) return; // Only return if we don't have geographic data
 
     const { width, height } = getChartDimensions();
 
