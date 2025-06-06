@@ -1,7 +1,7 @@
 import { json } from "@sveltejs/kit";
 import { Client } from "pg";
 import { env } from "$env/dynamic/private";
-import type { RequestHandler } from "./$types";
+import type { RequestHandler } from "../$types";
 
 // Database connection configuration
 const dbConfig = {
@@ -59,8 +59,6 @@ export const GET: RequestHandler = async () => {
       report_full_date: row.report_full_date || "",
       tally_report_month: row.tally_report_month || "",
     }));
-
-    console.log("Fetched data from database:", parsedData.length, "rows");
 
     return json({
       success: true,

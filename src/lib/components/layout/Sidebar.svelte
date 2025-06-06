@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getAvailableMonths } from "$data/api";
-  import { selectedMonth, sidebarOpen } from "$lib/stores/uiStore";
+  import { monthlyDataCache, selectedMonth, sidebarOpen } from "$lib/stores/uiStore";
   import { onMount } from "svelte";
   import { version } from "$app/environment";
 
@@ -36,11 +36,11 @@
   let monthDropdownOpen = false;
 
   let monthOptions: string[] = [];
-  let latestDataMonth: string = "";
+  let dataRetrievedAt: string = "";
   onMount(async () => {
     monthOptions = await getAvailableMonths();
     $selectedMonth = monthOptions[0];
-    latestDataMonth = monthOptions[0] || "";
+    dataRetrievedAt = $monthlyDataCache?.timestamp ? new Date($monthlyDataCache?.timestamp).toISOString() : "";
   });
 
   const selectMonth = (month: string) => {
@@ -197,7 +197,7 @@
           Project Audrey v{version}
         </div>
         <div class="text-xs text-gray-400">
-          Latest data: {getMonthLabel(latestDataMonth)}
+          Data pulled: {dataRetrievedAt}
         </div>
       </div>
     </div>

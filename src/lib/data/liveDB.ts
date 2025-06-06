@@ -14,7 +14,7 @@ export async function fetchMonthlyData(): Promise<MonthlyDataRow[]> {
 
   try {
     // Make HTTP request to our API endpoint
-    const response = await fetch("/api/monthly-data-live");
+    const response = await fetch("/api/monthly-tz");
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -32,8 +32,6 @@ export async function fetchMonthlyData(): Promise<MonthlyDataRow[]> {
       timestamp: now,
     });
 
-    console.log("Fetched data from API:", result.data.length, "rows");
-    console.log(result.data[0]);
     return result.data;
   } catch (error) {
     console.error("API request error:", error);
