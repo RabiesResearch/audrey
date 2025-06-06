@@ -72,3 +72,5 @@ static/build/
 
 # Svelte Inspector
 .svelte-inspector-port
+
+.todo
