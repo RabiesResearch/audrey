@@ -13,10 +13,12 @@
     type RegionCasesStockData,
     getAllRegionsAndDistricts,
   } from "$data/api";
+  import LoadingSpinner from "$lib/components/ui/LoadingSpinner.svelte";
 
   let data: RegionCasesStockData[] = [];
   let chartContainer: HTMLDivElement | null = null;
   let resizeObserver: ResizeObserver | null = null;
+  let isLoading = true;
   let regionDistrictMap: Map<
     string,
     { name: string; districts: Map<string, string> }
@@ -63,12 +65,35 @@
     districtID: string | null,
     selectedMonthValue: string,
   ) {
-    data = await getPatientAndStockNumbers(
-      regionID,
-      districtID,
-      selectedMonthValue,
-    );
-    drawChart();
+    isLoading = true;
+
+    try {
+      data = await getPatientAndStockNumbers(
+        regionID,
+        districtID,
+        selectedMonthValue,
+      );
+      drawChart();
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  // Set up resize observer when chart container becomes available
+  function setupResizeObserver() {
+    if (chartContainer && !resizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        if (!isLoading && data.length > 0) {
+          drawChart();
+        }
+      });
+      resizeObserver.observe(chartContainer);
+    }
+  }
+
+  // Reactive statement to set up resize observer when chartContainer is ready
+  $: if (chartContainer) {
+    setupResizeObserver();
   }
 
   onMount(async () => {
@@ -95,10 +120,6 @@
     });
 
     // Initial fetch - will be triggered by subscriptions above
-
-    // Responsive: redraw on resize
-    resizeObserver = new ResizeObserver(() => drawChart());
-    if (chartContainer) resizeObserver.observe(chartContainer);
   });
 
   // Handle cleanup when component is destroyed
@@ -367,5 +388,11 @@
 
 <!-- Chart fills the parent card, leaving space for the button at the bottom -->
 <div class="flex h-full w-full flex-col">
-  <div class="relative min-h-[200px] flex-1" bind:this={chartContainer}></div>
+  {#if isLoading}
+    <div class="flex h-full w-full items-center justify-center">
+      <LoadingSpinner size="lg" message="Loading cases and stock data..." />
+    </div>
+  {:else}
+    <div class="relative min-h-[200px] flex-1" bind:this={chartContainer}></div>
+  {/if}
 </div>

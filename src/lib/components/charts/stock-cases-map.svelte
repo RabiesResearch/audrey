@@ -13,6 +13,7 @@
     type RegionCasesStockData,
     getAllRegionsAndDistricts,
   } from "$data/api";
+  import LoadingSpinner from "$lib/components/ui/LoadingSpinner.svelte";
 
   interface Region {
     id: string;
@@ -53,6 +54,7 @@
   let geoJsonData: any = null;
   let chartContainer: HTMLDivElement | null = null;
   let resizeObserver: ResizeObserver | null = null;
+  let isLoading = true;
   let regionDistrictMap: Map<
     string,
     { name: string; districts: Map<string, string> }
@@ -126,31 +128,54 @@
     districtID: string | null,
     selectedMonthValue: string,
   ) {
-    // Look up the corresponding names for the IDs
-    let regionName: string | null = null;
-    let districtName: string | null = null;
+    isLoading = true;
+    
+    try {
+      // Look up the corresponding names for the IDs
+      let regionName: string | null = null;
+      let districtName: string | null = null;
 
-    if (regionID && regionDistrictMap.has(regionID)) {
-      regionName = regionDistrictMap.get(regionID)?.name || null;
+      if (regionID && regionDistrictMap.has(regionID)) {
+        regionName = regionDistrictMap.get(regionID)?.name || null;
 
-      if (districtID) {
-        districtName =
-          regionDistrictMap.get(regionID)?.districts.get(districtID) || null;
+        if (districtID) {
+          districtName =
+            regionDistrictMap.get(regionID)?.districts.get(districtID) || null;
+        }
       }
+
+      // Update the name stores (for display purposes)
+      selectedRegionName.set(regionName);
+      selectedDistrictName.set(districtName);
+
+      // Fetch data using IDs
+      data = await getPatientAndStockNumbers(
+        regionID,
+        districtID,
+        selectedMonthValue,
+      );
+      geoJsonData = await getGeoJsonData(regionID, districtID);
+      drawChart();
+    } finally {
+      isLoading = false;
     }
+  }
 
-    // Update the name stores (for display purposes)
-    selectedRegionName.set(regionName);
-    selectedDistrictName.set(districtName);
+  // Set up resize observer when chart container becomes available
+  function setupResizeObserver() {
+    if (chartContainer && !resizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        if (!isLoading && geoJsonData) {
+          drawChart();
+        }
+      });
+      resizeObserver.observe(chartContainer);
+    }
+  }
 
-    // Fetch data using IDs
-    data = await getPatientAndStockNumbers(
-      regionID,
-      districtID,
-      selectedMonthValue,
-    );
-    geoJsonData = await getGeoJsonData(regionID, districtID);
-    drawChart();
+  // Reactive statement to set up resize observer when chartContainer is ready
+  $: if (chartContainer) {
+    setupResizeObserver();
   }
 
   onMount(async () => {
@@ -177,10 +202,6 @@
     });
 
     // Initial fetch - will be triggered by subscriptions above
-
-    // Responsive: redraw on resize
-    resizeObserver = new ResizeObserver(() => drawChart());
-    if (chartContainer) resizeObserver.observe(chartContainer);
   });
 
   // Handle cleanup when component is destroyed
@@ -477,5 +498,11 @@
 </script>
 
 <div class="flex h-full w-full flex-col">
-  <div class="relative h-full flex-1" bind:this={chartContainer}></div>
+  {#if isLoading}
+    <div class="flex h-full w-full items-center justify-center">
+      <LoadingSpinner size="lg" message="Loading geographic data..." />
+    </div>
+  {:else}
+    <div class="relative h-full flex-1" bind:this={chartContainer}></div>
+  {/if}
 </div>

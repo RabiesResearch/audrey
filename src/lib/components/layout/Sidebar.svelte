@@ -1,6 +1,10 @@
 <script lang="ts">
   import { getAvailableMonths } from "$data/api";
-  import { monthlyDataCache, selectedMonth, sidebarOpen } from "$lib/stores/uiStore";
+  import {
+    monthlyDataCache,
+    selectedMonth,
+    sidebarOpen,
+  } from "$lib/stores/uiStore";
   import { onMount } from "svelte";
   import { version } from "$app/environment";
 
@@ -40,7 +44,9 @@
   onMount(async () => {
     monthOptions = await getAvailableMonths();
     $selectedMonth = monthOptions[0];
-    dataRetrievedAt = $monthlyDataCache?.timestamp ? new Date($monthlyDataCache?.timestamp).toISOString() : "";
+    dataRetrievedAt = $monthlyDataCache?.timestamp
+      ? new Date($monthlyDataCache?.timestamp).toISOString()
+      : "";
   });
 
   const selectMonth = (month: string) => {

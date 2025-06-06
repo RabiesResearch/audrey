@@ -8,6 +8,7 @@
   import { onMount, onDestroy } from "svelte";
   import { ChevronDown, ChevronRight } from "@steeze-ui/heroicons";
   import { Icon } from "@steeze-ui/svelte-icon";
+  import LoadingSpinner from "$lib/components/ui/LoadingSpinner.svelte";
 
   let data: CompletenessData[] = [];
   let availableMonths: string[] = [];
@@ -164,8 +165,8 @@
   <h2 class="mb-4 text-xl font-bold">Data Completeness</h2>
 
   {#if isLoading}
-    <div class="p-4 text-center text-gray-500">
-      Loading completeness data...
+    <div class="flex justify-center p-8">
+      <LoadingSpinner size="lg" message="Loading completeness data..." />
     </div>
   {:else if error}
     <div class="p-4 text-center text-red-500">Error: {error}</div>
