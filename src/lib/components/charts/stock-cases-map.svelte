@@ -163,20 +163,38 @@
 
   // Set up resize observer when chart container becomes available
   function setupResizeObserver() {
+    // Only set up if we don't already have one and container exists
     if (chartContainer && !resizeObserver) {
       resizeObserver = new ResizeObserver(() => {
         if (!isLoading && geoJsonData && chartContainer) {
-          console.debug("Resize triggered, redrawing chart");
+          console.debug("Map: Resize triggered, redrawing chart");
           drawChart();
         }
       });
       resizeObserver.observe(chartContainer);
+      console.debug("Map: ResizeObserver set up");
+    }
+  }
+
+  // Clean up resize observer
+  function cleanupResizeObserver() {
+    if (resizeObserver) {
+      if (chartContainer) {
+        resizeObserver.unobserve(chartContainer);
+      }
+      resizeObserver.disconnect();
+      resizeObserver = null;
+      console.debug("Map: ResizeObserver cleaned up");
     }
   }
 
   // Reactive statement to set up resize observer when chartContainer is ready
   $: if (chartContainer) {
-    setupResizeObserver();
+    // Check if the container is empty (was cleared) and we need to re-setup
+    if (!resizeObserver || chartContainer.children.length === 0) {
+      cleanupResizeObserver();
+      setupResizeObserver();
+    }
   }
 
   // Reactive statement to redraw chart when container becomes available
@@ -216,8 +234,7 @@
     unsubscribeRegionID && unsubscribeRegionID();
     unsubscribeDistrictID && unsubscribeDistrictID();
     unsubscribeSelectedMonth && unsubscribeSelectedMonth();
-    if (resizeObserver && chartContainer)
-      resizeObserver.unobserve(chartContainer);
+    cleanupResizeObserver();
   });
 
   function handleAreaClick(d: any) {
