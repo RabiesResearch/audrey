@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getAvailableMonths } from "$data/api";
   import {
     monthlyDataCache,
     selectedMonth,
@@ -7,6 +6,8 @@
   } from "$lib/stores/uiStore";
   import { onMount } from "svelte";
   import { version } from "$app/environment";
+
+  export let availableMonths: string[] = [];
 
   const toggleSidebar = (): boolean => ($sidebarOpen = !$sidebarOpen);
 
@@ -38,12 +39,16 @@
 
   // Month selector
   let monthDropdownOpen = false;
-
-  let monthOptions: string[] = [];
   let dataRetrievedAt: string = "";
-  onMount(async () => {
-    monthOptions = await getAvailableMonths();
-    $selectedMonth = monthOptions[0];
+  
+  // Make monthOptions reactive to the prop
+  $: monthOptions = availableMonths;
+  
+  onMount(() => {
+    // Set initial month if not already set and we have options
+    if (!$selectedMonth && monthOptions.length > 0) {
+      $selectedMonth = monthOptions[0];
+    }
     dataRetrievedAt = $monthlyDataCache?.timestamp
       ? new Date($monthlyDataCache?.timestamp).toISOString()
       : "";
