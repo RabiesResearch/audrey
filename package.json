@@ -30,7 +30,7 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "@auth/sveltekit": "^1.9.1",
+    "@auth/sveltekit": "^1.10.0",
     "@steeze-ui/heroicons": "^2.4.2",
     "@tanstack/svelte-table": "npm:tanstack-table-8-svelte-5@^0.1",
     "@types/papaparse": "^5.3.16",
