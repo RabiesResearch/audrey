@@ -73,4 +73,6 @@ static/build/
 # Svelte Inspector
 .svelte-inspector-port
 
-.todo
+# Specific to this project
+**/tan-gis/**
+**/*.geojson

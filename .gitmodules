@@ -1,0 +1,3 @@
+[submodule "src/lib/tan-gis"]
+	path = src/lib/tan-gis
+	url = git@github.com:RabiesResearch/tan-gis.git
