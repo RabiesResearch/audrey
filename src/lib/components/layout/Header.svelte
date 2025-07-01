@@ -1,6 +1,7 @@
 <script lang="ts">
   import { sidebarOpen } from "$lib/stores/uiStore";
   import { selectedRegion, selectedDistrict } from "$lib/stores/uiStore";
+  import { page } from "$app/stores";
 
   // Toggle sidebar
   const toggleSidebar = (): boolean => ($sidebarOpen = !$sidebarOpen);
@@ -19,6 +20,9 @@
     // This would be connected to an actual search API
     searchResults.push(searchTerm);
   };
+
+  // Get session data
+  $: session = $page.data.session;
 </script>
 
 <header class="sticky top-0 z-10 bg-white shadow-sm">
@@ -90,7 +94,22 @@
     </div>
 
     <div>
-      <button class="btn btn-primary">Sign In</button>
+      {#if session?.user}
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-gray-600">
+            Welcome, {session.user.name || session.user.email}
+          </span>
+          {#if session.user.image}
+            <img 
+              src={session.user.image} 
+              alt="Profile" 
+              class="h-8 w-8 rounded-full"
+            />
+          {/if}
+        </div>
+      {:else}
+        <button class="btn btn-primary">Sign In</button>
+      {/if}
     </div>
   </div>
 </header>
