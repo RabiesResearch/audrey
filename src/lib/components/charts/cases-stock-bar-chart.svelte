@@ -65,7 +65,11 @@
     districtID: string | null,
     selectedMonthValue: string,
   ) {
-    console.log('Bar Chart: fetchAndDraw called with', { regionID, districtID, selectedMonthValue });
+    console.log("Bar Chart: fetchAndDraw called with", {
+      regionID,
+      districtID,
+      selectedMonthValue,
+    });
     isLoading = true;
 
     try {
@@ -74,7 +78,11 @@
         districtID,
         selectedMonthValue,
       );
-      console.log('Bar Chart: fetchAndDraw - data fetched', data.length, 'items');
+      console.log(
+        "Bar Chart: fetchAndDraw - data fetched",
+        data.length,
+        "items",
+      );
       // Don't call drawChart() directly - let reactive statement handle it
     } finally {
       isLoading = false;
@@ -86,13 +94,20 @@
     // Only set up if we don't already have one and container exists
     if (chartContainer && !resizeObserver) {
       resizeObserver = new ResizeObserver(() => {
-        console.log('Bar Chart: ResizeObserver triggered, chartContainer:', !!chartContainer, 'isLoading:', isLoading, 'data.length:', data.length);
+        console.log(
+          "Bar Chart: ResizeObserver triggered, chartContainer:",
+          !!chartContainer,
+          "isLoading:",
+          isLoading,
+          "data.length:",
+          data.length,
+        );
         if (chartContainer && !isLoading && data.length > 0) {
           drawChart();
         }
       });
       resizeObserver.observe(chartContainer);
-      console.log('Bar Chart: ResizeObserver set up');
+      console.log("Bar Chart: ResizeObserver set up");
     }
   }
 
@@ -104,7 +119,7 @@
       }
       resizeObserver.disconnect();
       resizeObserver = null;
-      console.log('Bar Chart: ResizeObserver cleaned up');
+      console.log("Bar Chart: ResizeObserver cleaned up");
     }
   }
 
@@ -119,7 +134,10 @@
 
   // Reactive statement to redraw chart when container and data are ready
   $: if (chartContainer && data && !isLoading) {
-    console.log('Bar Chart: Reactive redraw triggered, data.length:', data.length);
+    console.log(
+      "Bar Chart: Reactive redraw triggered, data.length:",
+      data.length,
+    );
     drawChart();
   }
 
@@ -169,17 +187,22 @@
   }
 
   function drawChart() {
-    console.log('Bar Chart: drawChart called, chartContainer:', !!chartContainer, 'data.length:', data?.length || 0);
-    
+    console.log(
+      "Bar Chart: drawChart called, chartContainer:",
+      !!chartContainer,
+      "data.length:",
+      data?.length || 0,
+    );
+
     if (!chartContainer) {
-      console.log('Bar Chart: drawChart aborted - no chartContainer');
+      console.log("Bar Chart: drawChart aborted - no chartContainer");
       return;
     }
-    
+
     if (!data || data.length === 0) {
-      console.log('Bar Chart: drawChart - no data, showing message');
+      console.log("Bar Chart: drawChart - no data, showing message");
     }
-    
+
     chartContainer.innerHTML = "";
 
     // If no data, show a message instead of rendering empty chart
@@ -192,7 +215,11 @@
       return;
     }
 
-    console.log('Bar Chart: drawChart - starting chart render with', data.length, 'data points');
+    console.log(
+      "Bar Chart: drawChart - starting chart render with",
+      data.length,
+      "data points",
+    );
 
     const margin = { top: 40, right: 100, bottom: 80, left: 80 };
     const { width, height } = getChartDimensions();
@@ -307,10 +334,22 @@
       .append("rect")
       .attr("class", "patients")
       .attr("x", (d) => x(d.facilityName || d.districtName || d.regionName)!)
-      .attr("y", (d) => yLeft(d.uniquePatients))
+      .attr("y", (d) => {
+        // For zero values, position the bar at the bottom
+        return d.uniquePatients === 0
+          ? innerHeight - 1
+          : yLeft(d.uniquePatients);
+      })
       .attr("width", x.bandwidth() / 2)
-      .attr("height", (d) => innerHeight - yLeft(d.uniquePatients))
-      .attr("fill", "#2563eb")
+      .attr("height", (d) => {
+        // Give zero values a minimum height of 1 pixel so they're visible
+        return d.uniquePatients === 0
+          ? 1
+          : innerHeight - yLeft(d.uniquePatients);
+      })
+      .attr("fill", (d) => (d.uniquePatients === 0 ? "#e5e7eb" : "#2563eb")) // Light gray for zero values
+      .attr("stroke", "#334155")
+      .attr("stroke-width", 0.5)
       .on("mousemove", function (event, d) {
         showTooltip(event, d as RegionCasesStockData, "patients");
       })
@@ -332,10 +371,18 @@
           x(d.facilityName || d.districtName || d.regionName)! +
           x.bandwidth() / 2,
       )
-      .attr("y", (d) => yRight(d.vaccineStock))
+      .attr("y", (d) => {
+        // For zero values, position the bar at the bottom
+        return d.vaccineStock === 0 ? innerHeight - 1 : yRight(d.vaccineStock);
+      })
       .attr("width", x.bandwidth() / 2)
-      .attr("height", (d) => innerHeight - yRight(d.vaccineStock))
-      .attr("fill", "#fbbf24")
+      .attr("height", (d) => {
+        // Give zero values a minimum height of 1 pixel so they're visible
+        return d.vaccineStock === 0 ? 1 : innerHeight - yRight(d.vaccineStock);
+      })
+      .attr("fill", (d) => (d.vaccineStock === 0 ? "#f3f4f6" : "#fbbf24")) // Light gray for zero values
+      .attr("stroke", "#334155")
+      .attr("stroke-width", 0.5)
       .on("mousemove", function (event, d) {
         showTooltip(event, d as RegionCasesStockData, "stock");
       })
@@ -367,19 +414,18 @@
     // Add legend background box (make it wider and taller to fit text)
     svg
       .append("rect")
-      .attr("x", innerWidth - 200 - 10)
+      .attr("x", innerWidth - 230 - 10)
       .attr("y", 0)
-      .attr("width", 200)
-      .attr("height", 64)
+      .attr("width", 230)
+      .attr("height", 96) // Increased height for the third legend item
       .attr("fill", "#fff")
       .attr("stroke", "#334155")
-      .attr("stroke-width", 1)
-      .lower();
+      .attr("stroke-width", 1);
 
     // Add legend items (squares and text)
     svg
       .append("rect")
-      .attr("x", innerWidth - 200)
+      .attr("x", innerWidth - 230)
       .attr("y", 10)
       .attr("width", 16)
       .attr("height", 16)
@@ -388,14 +434,14 @@
       .attr("stroke-width", 1);
     svg
       .append("text")
-      .attr("x", innerWidth - 200 + 16 + 10)
+      .attr("x", innerWidth - 230 + 16 + 10)
       .attr("y", 10 + 8 + 1)
       .attr("alignment-baseline", "middle")
       .attr("fill", "#334155")
       .text("Unique Patients");
     svg
       .append("rect")
-      .attr("x", innerWidth - 200)
+      .attr("x", innerWidth - 230)
       .attr("y", 10 + 16 + 10)
       .attr("width", 16)
       .attr("height", 16)
@@ -404,11 +450,27 @@
       .attr("stroke-width", 1);
     svg
       .append("text")
-      .attr("x", innerWidth - 200 + 16 + 10)
+      .attr("x", innerWidth - 230 + 16 + 10)
       .attr("y", 10 + 16 + 10 + 8 + 1)
       .attr("alignment-baseline", "middle")
       .attr("fill", "#334155")
       .text("Vaccine Vials");
+    svg
+      .append("rect")
+      .attr("x", innerWidth - 230)
+      .attr("y", 10 + 32 + 20)
+      .attr("width", 16)
+      .attr("height", 16)
+      .attr("fill", "#e5e7eb")
+      .attr("stroke", "#334155")
+      .attr("stroke-width", 1);
+    svg
+      .append("text")
+      .attr("x", innerWidth - 230 + 16 + 10)
+      .attr("y", 10 + 32 + 20 + 8 + 1)
+      .attr("alignment-baseline", "middle")
+      .attr("fill", "#334155")
+      .text("No Data/Zero Values");
 
     // Style axes text and labels and legend text
     svg.selectAll(".tick text").attr("fill", "#334155");

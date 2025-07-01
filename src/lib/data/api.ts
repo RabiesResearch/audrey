@@ -281,9 +281,11 @@ export async function getPatientAndStockNumbers(
 
     const districtName = districtObj.district_council_name;
 
-    const facilities = Array.from(
+    // Get ALL facilities in this district (without month filtering)
+    // This ensures we include facilities with zero values that didn't report
+    const allFacilities = Array.from(
       new Set(
-        filteredRows
+        rows
           .filter(
             (r) =>
               r.tangis_region_id === regionID &&
@@ -293,7 +295,8 @@ export async function getPatientAndStockNumbers(
       ),
     );
 
-    return facilities.map((facility) => {
+    return allFacilities.map((facility) => {
+      // Now filter by month AND facility for aggregation
       const facilityRows = filteredRows.filter(
         (row) =>
           row.tangis_region_id === regionID &&
