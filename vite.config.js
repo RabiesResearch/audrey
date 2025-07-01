@@ -12,6 +12,8 @@ function linkTanGisFiles() {
       // Path to geojson files in tan-gis
       const geojsonDir = resolve(__dirname, "src/lib/tan-gis/data/geojson");
       const staticDir = resolve(__dirname, "static/geojson");
+      // Ensure the static/geojson directory exists
+      fs.mkdirSync(staticDir, { recursive: true });
 
       // If the geojson directory exists
       if (fs.existsSync(geojsonDir)) {
