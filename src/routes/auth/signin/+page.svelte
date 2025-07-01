@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { signIn } from "@auth/sveltekit/client"
+  import { signIn } from "@auth/sveltekit/client";
 </script>
 
 <svelte:head>
@@ -9,20 +9,23 @@
 <div class="flex min-h-screen items-center justify-center bg-gray-50">
   <div class="w-full max-w-md space-y-8">
     <div>
-      <h1 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+      <h1
+        class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900"
+      >
         Tanzania Rabies Dashboard
       </h1>
       <p class="mt-2 text-center text-sm text-gray-600">
-        A situational dashboard for tracking rabies cases and vaccinations across Tanzania's 31 administrative regions.
+        A situational dashboard for tracking rabies cases and vaccinations
+        across Tanzania's 31 administrative regions.
       </p>
     </div>
-    
+
     <div class="rounded-lg bg-white px-8 py-8 shadow-lg">
       <div class="text-center">
         <h2 class="mb-6 text-xl font-semibold text-gray-900">
           Sign in to continue
         </h2>
-        
+
         <button
           on:click={() => signIn("google", { callbackUrl: "/" })}
           class="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"

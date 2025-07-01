@@ -100,9 +100,9 @@
             Welcome, {session.user.name || session.user.email}
           </span>
           {#if session.user.image}
-            <img 
-              src={session.user.image} 
-              alt="Profile" 
+            <img
+              src={session.user.image}
+              alt="Profile"
               class="h-8 w-8 rounded-full"
             />
           {/if}

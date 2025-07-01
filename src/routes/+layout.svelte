@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from "$app/stores";
   import { Toaster } from "svelte-hot-french-toast";
   import Header from "$lib/components/layout/Header.svelte";
   import Sidebar from "$lib/components/layout/Sidebar.svelte";
   import { sidebarOpen } from "$lib/stores/uiStore";
 
   // Only show dashboard layout for dashboard routes
-  $: isDashboard = $page.url.pathname.startsWith('/dashboard');
+  $: isDashboard = $page.url.pathname.startsWith("/dashboard");
 </script>
 
 <Toaster />
