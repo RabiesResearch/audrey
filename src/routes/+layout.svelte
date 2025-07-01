@@ -3,7 +3,11 @@
   import { Toaster } from "svelte-hot-french-toast";
   import Header from "$lib/components/layout/Header.svelte";
   import Sidebar from "$lib/components/layout/Sidebar.svelte";
-  import { sidebarOpen, allRegionsAndDistricts, selectedMonth } from "$lib/stores/uiStore";
+  import {
+    sidebarOpen,
+    allRegionsAndDistricts,
+    selectedMonth,
+  } from "$lib/stores/uiStore";
   import { onMount } from "svelte";
 
   export let data;

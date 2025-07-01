@@ -40,10 +40,10 @@
   // Month selector
   let monthDropdownOpen = false;
   let dataRetrievedAt: string = "";
-  
+
   // Make monthOptions reactive to the prop
   $: monthOptions = availableMonths;
-  
+
   onMount(() => {
     // Set initial month if not already set and we have options
     if (!$selectedMonth && monthOptions.length > 0) {
