@@ -40,6 +40,12 @@ jobs:
         run: npm clean-install
 
       - name: Run linters
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: audrey_test
         run: npm run check
 
   build:
