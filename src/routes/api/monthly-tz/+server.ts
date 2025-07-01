@@ -1,7 +1,6 @@
-import { json } from "@sveltejs/kit";
+import { json, type RequestHandler } from "@sveltejs/kit";
 import { Client } from "pg";
 import { env } from "$env/dynamic/private";
-import type { RequestHandler } from "../$types";
 
 // Database connection configuration
 const dbConfig = {
