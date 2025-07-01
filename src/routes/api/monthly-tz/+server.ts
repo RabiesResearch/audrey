@@ -1,14 +1,20 @@
 import { json, type RequestHandler } from "@sveltejs/kit";
 import { Client } from "pg";
-import { env } from "$env/dynamic/private";
+import {
+  DB_HOST,
+  DB_NAME,
+  DB_PASSWORD,
+  DB_PORT,
+  DB_USER,
+} from "$lib/server/env";
 
 // Database connection configuration
 const dbConfig = {
-  host: env.DB_HOST || process.env.DB_HOST,
-  port: parseInt(env.DB_PORT || process.env.DB_PORT || "5432"),
-  user: env.DB_USER || process.env.DB_USER,
-  password: env.DB_PASSWORD || process.env.DB_PASSWORD,
-  database: env.DB_NAME || process.env.DB_NAME,
+  host: DB_HOST || process.env.DB_HOST,
+  port: parseInt(DB_PORT || process.env.DB_PORT || "5432"),
+  user: DB_USER || process.env.DB_USER,
+  password: DB_PASSWORD || process.env.DB_PASSWORD,
+  database: DB_NAME || process.env.DB_NAME,
   ssl: {
     rejectUnauthorized: false, // For AWS RDS
   },
