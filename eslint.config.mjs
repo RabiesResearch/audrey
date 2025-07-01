@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import prettierConfigRecommended from "eslint-plugin-prettier/recommended";
 import svelte from "eslint-plugin-svelte";
+import { globalIgnores } from "eslint/config";
 import globals from "globals";
 import ts from "typescript-eslint";
 import svelteConfig from "./svelte.config.js";
@@ -18,6 +19,7 @@ export default ts.config(
       },
     },
   },
+  globalIgnores([".github/", ".svelte-kit/", "node_modules/"]),
   {
     files: ["**/*.svelte", "**/*.svelte.ts", "**/*.svelte.js"],
     // See more details at: https://typescript-eslint.io/packages/parser/
