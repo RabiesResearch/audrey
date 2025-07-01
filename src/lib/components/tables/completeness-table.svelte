@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    getCompletenessData,
-    getAvailableMonths,
-    type CompletenessData,
-  } from "$lib/data/api";
+  import { getCompletenessData, type CompletenessData } from "$lib/data/api";
   import { selectedDistrictID, selectedRegionID } from "$lib/stores/uiStore";
   import { onMount, onDestroy } from "svelte";
   import { ChevronDown, ChevronRight } from "@steeze-ui/heroicons";
@@ -11,7 +7,6 @@
   import LoadingSpinner from "$lib/components/ui/LoadingSpinner.svelte";
 
   let data: CompletenessData[] = [];
-  let availableMonths: string[] = [];
   let isLoading = true;
   let error: string | null = null;
   let expandedItems = new Set<string>();
@@ -124,9 +119,6 @@
     try {
       isLoading = true;
       error = null;
-
-      // Get available months for reference
-      availableMonths = await getAvailableMonths();
 
       // Fetch completeness data
       data = await getCompletenessData($selectedRegionID, $selectedDistrictID);

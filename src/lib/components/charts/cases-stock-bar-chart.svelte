@@ -4,8 +4,6 @@
   import {
     selectedRegionID,
     selectedDistrictID,
-    selectedRegionName,
-    selectedDistrictName,
     selectedMonth,
   } from "$lib/stores/uiStore";
   import {
@@ -56,8 +54,6 @@
   // Subscribe to stores and refetch/redraw on change
   let unsubscribeRegionID: (() => void) | null = null;
   let unsubscribeDistrictID: (() => void) | null = null;
-  let unsubscribeRegionName: (() => void) | null = null;
-  let unsubscribeDistrictName: (() => void) | null = null;
   let unsubscribeSelectedMonth: (() => void) | null = null;
 
   async function fetchAndDraw(
@@ -169,9 +165,9 @@
 
   // Handle cleanup when component is destroyed
   onDestroy(() => {
-    unsubscribeRegionID && unsubscribeRegionID();
-    unsubscribeDistrictID && unsubscribeDistrictID();
-    unsubscribeSelectedMonth && unsubscribeSelectedMonth();
+    if (unsubscribeRegionID) unsubscribeRegionID();
+    if (unsubscribeDistrictID) unsubscribeDistrictID();
+    if (unsubscribeSelectedMonth) unsubscribeSelectedMonth();
     cleanupResizeObserver();
   });
 

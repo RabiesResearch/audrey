@@ -13,45 +13,12 @@
     selectedRegionName,
   } from "$lib/stores/uiStore";
   import * as d3 from "d3";
+  import type { ExtendedFeature } from "d3";
   import { onDestroy, onMount } from "svelte";
-
-  interface Region {
-    id: string;
-    name: string;
-    vaccineStock: number;
-    bites: {
-      lowRisk: number;
-      highRisk: number;
-      deaths: number;
-    };
-    districts: District[];
-  }
-
-  interface District {
-    id: string;
-    name: string;
-    vaccineStock: number;
-    bites: {
-      lowRisk: number;
-      highRisk: number;
-      deaths: number;
-    };
-    healthFacilities: HealthFacility[];
-  }
-
-  interface HealthFacility {
-    id: string;
-    name: string;
-    vaccineStock: number;
-    bites: {
-      lowRisk: number;
-      highRisk: number;
-      deaths: number;
-    };
-  }
+  import type { Feature, FeatureCollection } from "geojson";
 
   let data: RegionCasesStockData[] = [];
-  let geoJsonData: any = null;
+  let geoJsonData: FeatureCollection | null = null;
   let chartContainer: HTMLDivElement | null = null;
   let resizeObserver: ResizeObserver | null = null;
   let isLoading = true;
@@ -89,33 +56,32 @@
   // Subscribe to stores and refetch/redraw on change
   let unsubscribeRegionID: (() => void) | null = null;
   let unsubscribeDistrictID: (() => void) | null = null;
-  let unsubscribeRegionName: (() => void) | null = null;
-  let unsubscribeDistrictName: (() => void) | null = null;
   let unsubscribeSelectedMonth: (() => void) | null = null;
 
   async function getGeoJsonData(
     regionID: string | null,
     districtID: string | null,
-  ) {
-    let data = null;
+  ): Promise<FeatureCollection | null> {
+    let data: FeatureCollection | null = null;
     if (!regionID) {
-      data = await d3.json("/geojson/tz_regions_2022.geojson");
+      data = (await d3.json(
+        "/geojson/tz_regions_2022.geojson",
+      )) as FeatureCollection;
     } else if (regionID && !districtID) {
       await d3.json("/geojson/tz_district_councils_2022.geojson").then((d) => {
-        // Filter features based on region ID instead of name
-        const geoJson = d as { features: any[]; [key: string]: any };
-        const geoJsonFeatures = geoJson.features.filter((feature: any) => {
-          return feature.properties.regin_d === regionID;
+        const geoJson = d as FeatureCollection;
+        const geoJsonFeatures = geoJson.features.filter((feature) => {
+          return feature.properties && feature.properties.regin_d === regionID;
         });
-        data = geoJson;
-        data.features = geoJsonFeatures;
+        data = { ...geoJson, features: geoJsonFeatures };
       });
     } else if (regionID && districtID) {
-      // When viewing wards, filter by district ID
       data = await d3.json("/geojson/tz_wards_2022.geojson").then((d) => {
-        const geoJson = d as { features: any[]; [key: string]: any };
-        const geoJsonFeatures = geoJson.features.filter((feature: any) => {
-          return feature.properties.concl_d === districtID;
+        const geoJson = d as FeatureCollection;
+        const geoJsonFeatures = geoJson.features.filter((feature) => {
+          return (
+            feature.properties && feature.properties.concl_d === districtID
+          );
         });
         return { ...geoJson, features: geoJsonFeatures };
       });
@@ -231,36 +197,31 @@
 
   // Handle cleanup when component is destroyed
   onDestroy(() => {
-    unsubscribeRegionID && unsubscribeRegionID();
-    unsubscribeDistrictID && unsubscribeDistrictID();
-    unsubscribeSelectedMonth && unsubscribeSelectedMonth();
+    if (unsubscribeRegionID) unsubscribeRegionID();
+    if (unsubscribeDistrictID) unsubscribeDistrictID();
+    if (unsubscribeSelectedMonth) unsubscribeSelectedMonth();
     cleanupResizeObserver();
   });
 
-  function handleAreaClick(d: any) {
+  function handleAreaClick(d: ExtendedFeature) {
     // If a region is already selected, clicking an area means select a district
     // If no region is selected, clicking an area means select a region
     if ($selectedRegionID) {
-      if (d.properties.concl_d) {
-        // Use the district ID instead of name
+      if (d.properties && d.properties.concl_d) {
         selectedDistrictID.set(d.properties.concl_d);
       }
-    } else if (d.properties.region_id) {
-      // Use the region ID instead of name
+    } else if (d.properties && d.properties.region_id) {
       selectedRegionID.set(d.properties.region_id);
       selectedDistrictID.set(null);
     }
   }
 
   function drawChart() {
-    if (!chartContainer) {
-      console.warn("Chart container is null, will retry when available");
+    if (!chartContainer || !geoJsonData) {
+      console.warn(
+        "Chart container or geoJsonData is null, will retry when available",
+      );
       return;
-    }
-
-    if (!geoJsonData) {
-      console.warn("No GeoJSON data available");
-      return; // Only return if we don't have geographic data
     }
 
     // Clear previous chart content
@@ -300,7 +261,16 @@
       .style("position", "absolute");
 
     // Tooltip event handlers
-    function showTooltip(event: MouseEvent, d: any) {
+    function showTooltip(event: MouseEvent, d: ExtendedFeature) {
+      // typeguard uses later to stop TS freaking out about possible nulls
+      function hasRegionId(
+        props: unknown,
+      ): props is { region_id: string; reg_name?: string } {
+        return (
+          typeof props === "object" && props !== null && "region_id" in props
+        );
+      }
+
       // Get mouse position relative to the chart container
       const [mouseX, mouseY] = d3.pointer(event, chartContainer);
 
@@ -309,13 +279,35 @@
 
       if (!$selectedRegionID) {
         // Region view
-        areaData = data.find((r) => r.regionID === d.properties.region_id);
+        if (hasRegionId(d.properties)) {
+          const props = d.properties;
+          areaData = data.find((r) => r.regionID === props.region_id);
 
-        if (!areaData) {
+          if (!areaData) {
+            tooltip
+              .html(
+                `<div><strong>${"reg_name" in props ? props.reg_name : "Unknown Region"}</strong></div>` +
+                  `<div>No data for this area</span></div>`,
+              )
+              .style("left", mouseX + 10 + "px")
+              .style("top", mouseY - 50 + "px")
+              .transition()
+              .duration(100)
+              .style("opacity", 1);
+            return;
+          }
+
+          const regionName =
+            areaData.regionName ||
+            ("reg_name" in props ? props.reg_name : "Unknown Region");
+          const vaccineStock = areaData.vaccineStock || 0;
+          const uniquePatients = areaData.uniquePatients || 0;
+
           tooltip
             .html(
-              `<div><strong>${d.properties.reg_name || "Unknown Region"}</strong></div>` +
-                `<div>No data for this area</span></div>`,
+              `<div><strong>${regionName}</strong></div>` +
+                `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
+                `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`,
             )
             .style("left", mouseX + 10 + "px")
             .style("top", mouseY - 50 + "px")
@@ -324,31 +316,29 @@
             .style("opacity", 1);
           return;
         }
-
-        const regionName =
-          areaData.regionName || d.properties.reg_name || "Unknown Region";
-        const vaccineStock = areaData.vaccineStock || 0;
-        const uniquePatients = areaData.uniquePatients || 0;
-
+        // fallback for when d.properties is not a region
         tooltip
           .html(
-            `<div><strong>${regionName}</strong></div>` +
-              `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
-              `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`,
+            `<div><strong>Unknown Region</strong></div><div>No data for this area</span></div>`,
           )
           .style("left", mouseX + 10 + "px")
           .style("top", mouseY - 50 + "px")
           .transition()
           .duration(100)
           .style("opacity", 1);
+        return;
       } else if ($selectedRegionID && !$selectedDistrictID) {
         // District view
-        areaData = data.find((row) => row.districtID === d.properties.concl_d);
+        if (d.properties && "concl_d" in d.properties && d.properties.concl_d) {
+          areaData = data.find(
+            (row) => row.districtID === d.properties!.concl_d,
+          );
+        }
 
         if (!areaData) {
           tooltip
             .html(
-              `<div><strong>${d.properties.conc_nm || "Unknown District"}</strong></div>` +
+              `<div><strong>${d.properties && "conc_nm" in d.properties ? d.properties.conc_nm : "Unknown District"}</strong></div>` +
                 `<div>No data for this area</span></div>`,
             )
             .style("left", mouseX + 10 + "px")
@@ -360,7 +350,10 @@
         }
 
         const districtName =
-          areaData.districtName || d.properties.conc_nm || "Unknown District";
+          areaData.districtName ||
+          (d.properties && "conc_nm" in d.properties
+            ? d.properties.conc_nm
+            : "Unknown District");
         const vaccineStock = areaData.vaccineStock || 0;
         const uniquePatients = areaData.uniquePatients || 0;
 
@@ -379,7 +372,10 @@
         // Ward view
         areaData = undefined; // TODO data.find((row) => row.wardID === d.properties.Loc_ID);
 
-        const wardName = d.properties.ward_nm || "Unknown Ward";
+        const wardName =
+          d.properties && "ward_nm" in d.properties
+            ? d.properties.ward_nm
+            : "Unknown Ward";
         let tooltipContent = `<div><strong>${wardName}</strong></div>`;
 
         tooltipContent += `<div>No data for this area</div>`;
@@ -412,34 +408,38 @@
     svg
       .append("g")
       .selectAll("path")
-      .data(geoJsonData.features)
+      .data(geoJsonData.features as Feature[])
       .enter()
       .append("path")
-      .attr("d", (d: any) => path(d))
-      .attr("fill", (d: any) => {
+      .attr("d", (d: Feature) => path(d))
+      .attr("fill", (d: Feature) => {
         // Check if we're showing regions or districts
         if (!$selectedRegionID) {
           // Region view - find the region data by region ID
-          const areaData = data.find(
-            (row) => row.regionID === d.properties.region_id,
-          );
+          const areaData =
+            d.properties &&
+            "region_id" in d.properties &&
+            d.properties.region_id
+              ? data.find((row) => row.regionID === d.properties!.region_id)
+              : undefined;
           return areaData ? color(areaData.vaccineStock || 0) : noDataColor;
         } else {
           // District view - find the district data by district ID
-          const areaData = data.find(
-            (row) => row.districtID === d.properties.concl_d,
-          );
+          const areaData =
+            d.properties && "concl_d" in d.properties && d.properties.concl_d
+              ? data.find((row) => row.districtID === d.properties!.concl_d)
+              : undefined;
           return areaData ? color(areaData.vaccineStock || 0) : noDataColor;
         }
       })
       .attr("stroke", "#334155")
       .attr("stroke-width", 1)
       .attr("cursor", "pointer")
-      .on("mousemove", function (event, d) {
+      .on("mousemove", function (event, d: ExtendedFeature) {
         showTooltip(event, d);
       })
       .on("mouseleave", hideTooltip)
-      .on("click", function (event, d) {
+      .on("click", function (event, d: ExtendedFeature) {
         handleAreaClick(d);
       });
 

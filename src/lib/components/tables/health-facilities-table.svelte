@@ -4,12 +4,7 @@
     getFacilityInfoById,
     type FacilityInfo,
   } from "$lib/data/api";
-  import {
-    selectedRegionID,
-    selectedDistrictID,
-    selectedRegionName,
-    selectedDistrictName,
-  } from "$lib/stores/uiStore";
+  import { selectedRegionID, selectedDistrictID } from "$lib/stores/uiStore";
   import {
     createColumnHelper,
     createSvelteTable,
@@ -188,7 +183,9 @@
       expanded: expandedState,
     },
     getSubRows: (row: FacilityInfoWithChildren) => row.children,
-    onExpandedChange(updater: any) {
+    onExpandedChange(
+      updater: ExpandedState | ((prev: ExpandedState) => ExpandedState),
+    ) {
       if (updater instanceof Function) {
         expandedState = updater(expandedState);
       } else {

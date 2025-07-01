@@ -140,12 +140,13 @@
 
     <!-- Page indicator -->
     <div class="mt-2 flex flex-col items-center gap-1">
-      {#each pageIds as _, index}
+      {#each pageIds as id, index}
         <div
           class="h-2 w-2 rounded-full transition-colors {index ===
           currentPageIndex
             ? 'bg-blue-600'
             : 'bg-gray-300'}"
+          {id}
         ></div>
       {/each}
     </div>
