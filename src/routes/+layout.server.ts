@@ -91,7 +91,7 @@ export const load: LayoutServerLoad = async ({ fetch, url, locals }) => {
     console.error("Error loading server-side data:", error);
     // Return empty data as fallback - components can handle loading client-side
     return {
-      session: null,
+      session,
       allRegionsAndDistricts: [],
       availableMonths: [],
       initialSelectedMonth: new Date().toISOString().slice(0, 7),
