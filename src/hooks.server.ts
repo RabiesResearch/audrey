@@ -1,6 +1,10 @@
 import { SvelteKitAuth } from "@auth/sveltekit";
 import Google from "@auth/sveltekit/providers/google";
-import { AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET } from "$lib/server/env";
+import {
+  AUTH_SECRET,
+  AUTH_GOOGLE_ID,
+  AUTH_GOOGLE_SECRET,
+} from "$lib/server/env";
 
 export const { handle } = SvelteKitAuth({
   providers: [

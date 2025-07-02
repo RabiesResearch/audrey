@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from "$app/stores";
   import { Toaster } from "svelte-hot-french-toast";
   import Header from "$lib/components/layout/Header.svelte";
   import Sidebar from "$lib/components/layout/Sidebar.svelte";
@@ -19,7 +19,7 @@
   });
 
   // Check if we're on the login page
-  $: isLoginPage = $page.url.pathname === '/login';
+  $: isLoginPage = $page.url.pathname === "/login";
 </script>
 
 <Toaster />

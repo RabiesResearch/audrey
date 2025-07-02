@@ -4,12 +4,12 @@ import { redirect } from "@sveltejs/kit";
 export const load: LayoutServerLoad = async ({ fetch, url, locals }) => {
   // Check if user is authenticated
   const session = await locals.auth();
-  
+
   // If not authenticated and not on login page, redirect to login
   if (!session?.user && url.pathname !== "/login") {
     throw redirect(302, "/login");
   }
-  
+
   // If authenticated and on login page, redirect to dashboard
   if (session?.user && url.pathname === "/login") {
     throw redirect(302, "/");
