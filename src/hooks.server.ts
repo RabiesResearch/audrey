@@ -13,6 +13,8 @@ export const { handle } = SvelteKitAuth({
       clientSecret: AUTH_GOOGLE_SECRET,
     }),
   ],
+  basePath: "/auth",
+  trustHost: true,
   secret: AUTH_SECRET,
   session: {
     strategy: "jwt",
