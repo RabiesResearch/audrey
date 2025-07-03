@@ -434,7 +434,7 @@
       })
       .attr("stroke", "#334155")
       .attr("stroke-width", 1)
-      .attr("cursor", "pointer")
+      .style("cursor", "pointer")
       .on("mousemove", function (event, d: ExtendedFeature) {
         showTooltip(event, d);
       })
