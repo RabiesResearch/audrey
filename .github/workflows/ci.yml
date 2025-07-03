@@ -1,4 +1,4 @@
-name: Lint
+name: lint, check and build
 
 on:
   pull_request:
@@ -15,41 +15,44 @@ env:
   AUTH_GOOGLE_ID: google-client-id
   AUTH_GOOGLE_SECRET: google-client-secret
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
 
-      - name: Install dependencies
+      - name: install dependencies
         run: npm clean-install
 
-      - name: Run linters
+      - name: run linters
         run: npm run lint
 
   check:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
 
-      - name: Install dependencies
+      - name: install dependencies
         run: npm clean-install
 
-      - name: Run linters
+      - name: run checks
         run: npm run check
 
   build:
@@ -59,16 +62,16 @@ jobs:
     if: github.event_name == 'pull_request'
 
     steps:
-      - name: Checkout repository
+      - name: checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
 
-      - name: Install dependencies
+      - name: install dependencies
         run: npm clean-install
 
-      - name: Build application
+      - name: build application
         run: npm run build
