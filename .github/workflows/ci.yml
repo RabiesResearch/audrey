@@ -18,6 +18,8 @@ env:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -36,6 +38,8 @@ jobs:
 
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
@@ -57,6 +61,8 @@ jobs:
     needs: [lint, check]
     # Only run this job on pull requests
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
