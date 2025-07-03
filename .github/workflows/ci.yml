@@ -15,11 +15,12 @@ env:
   AUTH_GOOGLE_ID: google-client-id
   AUTH_GOOGLE_SECRET: google-client-secret
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
 
     steps:
       - name: checkout repository
@@ -38,8 +39,6 @@ jobs:
 
   check:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
 
     steps:
       - name: checkout repository
@@ -53,7 +52,7 @@ jobs:
       - name: install dependencies
         run: npm clean-install
 
-      - name: run linters
+      - name: run checks
         run: npm run check
 
   build:
@@ -61,8 +60,6 @@ jobs:
     needs: [lint, check]
     # Only run this job on pull requests
     if: github.event_name == 'pull_request'
-    permissions:
-      contents: read
 
     steps:
       - name: checkout repository
