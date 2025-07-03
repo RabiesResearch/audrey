@@ -21,7 +21,7 @@ export default ts.config(
   },
   globalIgnores([
     ".github/",
-    ".netlify",
+    ".netlify/",
     ".svelte-kit/",
     "build/",
     "node_modules/",
