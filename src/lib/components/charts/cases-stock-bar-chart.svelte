@@ -346,6 +346,7 @@
       .attr("fill", (d) => (d.uniquePatients === 0 ? "#e5e7eb" : "#2563eb")) // Light gray for zero values
       .attr("stroke", "#334155")
       .attr("stroke-width", 0.5)
+      .attr("cursor", "pointer")
       .on("mousemove", function (event, d) {
         showTooltip(event, d as RegionCasesStockData, "patients");
       })
@@ -379,6 +380,7 @@
       .attr("fill", (d) => (d.vaccineStock === 0 ? "#f3f4f6" : "#fbbf24")) // Light gray for zero values
       .attr("stroke", "#334155")
       .attr("stroke-width", 0.5)
+      .attr("cursor", "pointer")
       .on("mousemove", function (event, d) {
         showTooltip(event, d as RegionCasesStockData, "stock");
       })
