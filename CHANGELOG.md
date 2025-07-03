@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/RabiesResearch/audrey/compare/v1.0.0...v1.0.1) (2025-07-03)
+
+
+### Bug Fixes
+
+* :construction_worker: give additional permissions to the release action ([#53](https://github.com/RabiesResearch/audrey/issues/53)) ([6dec842](https://github.com/RabiesResearch/audrey/commit/6dec84206176eebc01d17daf4186030df1bb5ebc))
+
 # 1.0.0 (2025-07-03)
 
 
