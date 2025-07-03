@@ -1,4 +1,4 @@
-name: Lint
+name: lint, check and build
 
 on:
   pull_request:
@@ -22,18 +22,18 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout repository
+      - name: checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
 
-      - name: Install dependencies
+      - name: install dependencies
         run: npm clean-install
 
-      - name: Run linters
+      - name: run linters
         run: npm run lint
 
   check:
@@ -42,18 +42,18 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout repository
+      - name: checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
 
-      - name: Install dependencies
+      - name: install dependencies
         run: npm clean-install
 
-      - name: Run linters
+      - name: run linters
         run: npm run check
 
   build:
@@ -65,16 +65,16 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout repository
+      - name: checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
 
-      - name: Install dependencies
+      - name: install dependencies
         run: npm clean-install
 
-      - name: Build application
+      - name: build application
         run: npm run build
