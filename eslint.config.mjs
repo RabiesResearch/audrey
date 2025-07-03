@@ -19,7 +19,13 @@ export default ts.config(
       },
     },
   },
-  globalIgnores([".github/", ".svelte-kit/", "node_modules/"]),
+  globalIgnores([
+    ".github/",
+    ".netlify",
+    ".svelte-kit/",
+    "build/",
+    "node_modules/",
+  ]),
   {
     files: ["**/*.svelte", "**/*.svelte.ts", "**/*.svelte.js"],
     // See more details at: https://typescript-eslint.io/packages/parser/
