@@ -1,6 +1,30 @@
 import type { LayoutServerLoad } from "./$types";
+import { redirect } from "@sveltejs/kit";
 
-export const load: LayoutServerLoad = async ({ fetch, url }) => {
+export const load: LayoutServerLoad = async ({ fetch, url, locals }) => {
+  // Check if user is authenticated
+  const session = await locals.auth();
+
+  // If not authenticated and not on login page, redirect to login
+  if (!session?.user && url.pathname !== "/login") {
+    throw redirect(302, "/login");
+  }
+
+  // If authenticated and on login page, redirect to dashboard
+  if (session?.user && url.pathname === "/login") {
+    throw redirect(302, "/");
+  }
+
+  // If on login page, just return session data without loading dashboard data
+  if (url.pathname === "/login") {
+    return {
+      session,
+      allRegionsAndDistricts: [],
+      availableMonths: [],
+      initialSelectedMonth: new Date().toISOString().slice(0, 7),
+    };
+  }
+
   try {
     // Call the API endpoint directly with absolute URL
     const response = await fetch(`${url.origin}/api/monthly-tz`);
@@ -57,6 +81,7 @@ export const load: LayoutServerLoad = async ({ fetch, url }) => {
       .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
 
     return {
+      session,
       allRegionsAndDistricts,
       availableMonths,
       initialSelectedMonth:
@@ -66,6 +91,7 @@ export const load: LayoutServerLoad = async ({ fetch, url }) => {
     console.error("Error loading server-side data:", error);
     // Return empty data as fallback - components can handle loading client-side
     return {
+      session,
       allRegionsAndDistricts: [],
       availableMonths: [],
       initialSelectedMonth: new Date().toISOString().slice(0, 7),
