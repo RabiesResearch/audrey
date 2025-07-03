@@ -1,5 +1,6 @@
 <script lang="ts">
   import { signIn } from "@auth/sveltekit/client";
+  export const prerender = true;
 </script>
 
 <svelte:head>
