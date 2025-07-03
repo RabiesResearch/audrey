@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
+import adapter from "@sveltejs/adapter-netlify";
 
 // get dashboard version and define it for display in the sidebar
 const file = fileURLToPath(new URL("package.json", import.meta.url));
@@ -8,9 +9,7 @@ const pkg = JSON.parse(json);
 
 const config = {
   kit: {
-    // adapter-auto only supports some environments, see https://kit.svelte.dev/docs/adapter-auto for a list.
-    // If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-    // TODO adapter: adapter(),
+    adapter: adapter(),
     alias: {
       $components: "src/lib/components",
       $utils: "src/lib/utils",
