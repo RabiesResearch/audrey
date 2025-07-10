@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/RabiesResearch/audrey/compare/v1.0.1...v1.0.2) (2025-07-10)
+
+
+### Bug Fixes
+
+* :bug: change cursor when hovering over bars ([#52](https://github.com/RabiesResearch/audrey/issues/52)) ([134e05a](https://github.com/RabiesResearch/audrey/commit/134e05a8c74e0e481942a39d849e3eec5673de94))
+
 ## [1.0.1](https://github.com/RabiesResearch/audrey/compare/v1.0.0...v1.0.1) (2025-07-03)
 
 
