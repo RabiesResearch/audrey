@@ -13,7 +13,7 @@ jobs:
       pull-requests: write # to be able to comment on released pull requests
     steps:
       - name: checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: setup Node.js
         uses: actions/setup-node@v4
