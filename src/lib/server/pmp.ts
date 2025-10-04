@@ -1,4 +1,8 @@
-import { PMP_BASE_URL, PMP_USERNAME, PMP_PASSWORD } from "./env";
+import {
+  PMP_BASE_URL,
+  PMP_USERNAME,
+  PMP_PASSWORD,
+} from "$env/static/private";
 
 interface PMPAuthResponse {
   access_token: string;
