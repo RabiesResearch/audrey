@@ -1,4 +1,4 @@
-import { PMP_BASE_URL } from "./env";
+import { PMP_BASE_URL, PMP_USERNAME, PMP_PASSWORD } from "./env";
 
 interface PMPAuthResponse {
   access_token: string;
@@ -31,10 +31,10 @@ class PMPClient {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          password: "complex-password",
+          password: PMP_PASSWORD,
           provider: "db",
           refresh: true,
-          username: "admin",
+          username: PMP_USERNAME,
         }),
       });
 
