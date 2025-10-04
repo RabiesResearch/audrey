@@ -5,6 +5,7 @@ import {
   AUTH_GOOGLE_ID,
   AUTH_GOOGLE_SECRET,
 } from "$lib/server/env";
+import { isEmailWhitelisted } from "$lib/server/pmp";
 
 export const { handle } = SvelteKitAuth({
   providers: [
@@ -22,5 +23,28 @@ export const { handle } = SvelteKitAuth({
   },
   pages: {
     signIn: "/login",
+  },
+  callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google" && user.email) {
+        try {
+          const isAllowed = await isEmailWhitelisted(user.email);
+          if (!isAllowed) {
+            console.log(
+              `Access denied for email: ${user.email} - not in whitelist`,
+            );
+            return false;
+          }
+          console.log(`Access granted for email: ${user.email}`);
+        } catch (error) {
+          console.error(
+            `Error during whitelist check for ${user.email}:`,
+            error,
+          );
+          return false;
+        }
+      }
+      return true;
+    },
   },
 });

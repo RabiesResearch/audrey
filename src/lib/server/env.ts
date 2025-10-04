@@ -7,6 +7,7 @@ import {
   AUTH_SECRET,
   AUTH_GOOGLE_ID,
   AUTH_GOOGLE_SECRET,
+  PMP_BASE_URL,
 } from "$env/static/private";
 
 export {
@@ -18,4 +19,5 @@ export {
   AUTH_SECRET,
   AUTH_GOOGLE_ID,
   AUTH_GOOGLE_SECRET,
+  PMP_BASE_URL,
 };
