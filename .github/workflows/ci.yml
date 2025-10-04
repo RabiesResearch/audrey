@@ -6,14 +6,17 @@ on:
       - main
 
 env:
-  DB_HOST: localhost
-  DB_PORT: 5432
-  DB_USER: postgres
-  DB_PASSWORD: postgres
-  DB_NAME: audrey_test
-  AUTH_SECRET: 123456
-  AUTH_GOOGLE_ID: google-client-id
-  AUTH_GOOGLE_SECRET: google-client-secret
+  DB_HOST: ${{ secrets.DB_HOST }}
+  DB_PORT: ${{ secrets.DB_PORT }}
+  DB_USER: ${{ secrets.DB_USER }}
+  DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+  DB_NAME: ${{ secrets.DB_NAME }}
+  AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+  AUTH_GOOGLE_ID: ${{ secrets.AUTH_GOOGLE_ID }}
+  AUTH_GOOGLE_SECRET: ${{ secrets.AUTH_GOOGLE_SECRET }}
+  PMP_BASE_URL: ${{ vars.PMP_BASE_URL }}
+  PMP_USERNAME: ${{ secrets.PMP_USERNAME }}
+  PMP_PASSWORD: ${{ secrets.PMP_PASSWORD }}
 
 permissions:
   contents: read
