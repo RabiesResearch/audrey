@@ -142,10 +142,10 @@ export async function isEmailWhitelisted(email: string): Promise<boolean> {
   } catch (error) {
     console.error("Error checking email whitelist:", error);
 
-    // In case of PMP unavailability, you might want to allow access in development
-    // but deny in production. For security, we default to denying access.
-    const isDevelopment = process.env.NODE_ENV === "development";
-    if (isDevelopment) {
+    // In case of PMP unavailability, or NNetlify previews with dynamic domains
+    // We want to allow access in development but deny in production.
+    // For security, we default to denying access.
+    if (import.meta.env.DEV) {
       console.warn("Development mode: PMP unavailable, allowing access");
       return true;
     }
