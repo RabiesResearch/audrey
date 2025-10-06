@@ -45,7 +45,7 @@
     "d3": "^7.9.0",
     "papaparse": "^5.5.3",
     "pg": "^8.16.3",
-    "svelte-hot-french-toast": "^2.0.0",
+    "svelte-hot-french-toast": "^4.0.0",
     "tailwindcss": "^4.1.13"
   },
   "type": "module"
