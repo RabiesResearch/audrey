@@ -40,3 +40,12 @@ export const monthlyDataCache = writable<CachedMonthlyData | null>(null);
 const currentMonth = new Date();
 const currentMonthValue = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, "0")}`;
 export const selectedMonth = writable<string>(currentMonthValue);
+
+// Page sections type and store for dynamic sidebar generation
+export type PageSection = {
+  id: string;
+  label: string;
+  icon: string;
+};
+
+export const pageSections = writable<PageSection[]>([]);
