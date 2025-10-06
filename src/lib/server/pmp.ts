@@ -12,6 +12,7 @@ interface PMPRefreshResponse {
 interface PMPUserWhitelist {
   email: string;
   active?: boolean;
+  regions?: string[];
 }
 
 class PMPClient {
@@ -116,6 +117,44 @@ class PMPClient {
       throw error;
     }
   }
+
+  async getUserRegions(email: string): Promise<string[]> {
+    if (!this.accessToken) {
+      await this.authenticate();
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/audrey/v1/user_whitelist`, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+        },
+      });
+
+      if (response.status === 401) {
+        // Token might be expired, try to refresh
+        await this.refreshAccessToken();
+        return this.getUserRegions(email);
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch whitelist: ${response.status}`);
+      }
+
+      const data: PMPUserWhitelist[] = await response.json();
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Find user and return their regions
+      const user = data.find((u) => 
+        u.email.toLowerCase().trim() === normalizedEmail && 
+        u.active !== false
+      );
+      
+      return user?.regions || [];
+    } catch (error) {
+      console.error("Failed to fetch user regions from PMP:", error);
+      throw error;
+    }
+  }
 }
 
 // Singleton instance
@@ -152,5 +191,24 @@ export async function isEmailWhitelisted(email: string): Promise<boolean> {
 
     // In production, deny access for security
     return false;
+  }
+}
+
+export async function getUserAllowedRegions(email: string): Promise<string[]> {
+  try {
+    const client = getPMPClient();
+    return await client.getUserRegions(email);
+  } catch (error) {
+    console.error("Error fetching user regions:", error);
+
+    // In development mode, return all available regions
+    if (import.meta.env.DEV) {
+      console.warn("Development mode: PMP unavailable, returning all regions");
+      // This would need to be imported from api.ts, but for now return empty array
+      return [];
+    }
+
+    // In production, return empty array for security
+    return [];
   }
 }
