@@ -4,12 +4,7 @@ import { AUTH_SECRET } from "$env/static/private";
 import { isEmailWhitelisted } from "$lib/server/pmp";
 
 export const { handle } = SvelteKitAuth({
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID || "",
-      clientSecret: process.env.AUTH_GOOGLE_SECRET || "",
-    }),
-  ],
+  providers: [Google],
   basePath: "/auth",
   trustHost: true,
   secret: AUTH_SECRET,
@@ -22,6 +17,8 @@ export const { handle } = SvelteKitAuth({
   },
   callbacks: {
     async signIn({ user, account }) {
+      console.log(process.env.AUTH_GOOGLE_ID);
+      console.log(process.env.AUTH_GOOGLE_SECRET);
       if (account?.provider === "google" && user.email) {
         try {
           const isAllowed = await isEmailWhitelisted(user.email);

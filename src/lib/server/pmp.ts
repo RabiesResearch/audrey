@@ -1,5 +1,3 @@
-import { PMP_BASE_URL, PMP_USERNAME } from "$env/static/private";
-
 interface PMPAuthResponse {
   access_token: string;
   refresh_token: string;
@@ -23,11 +21,10 @@ class PMPClient {
   private password: string;
 
   constructor() {
-    this.baseUrl =
-      PMP_BASE_URL || process.env.PMP_BASE_URL || "http://localhost:5000";
+    this.baseUrl = import.meta.env.VITE_PMP_BASE_URL || "http://localhost:5000";
     this.username =
-      PMP_USERNAME || process.env.PMP_USERNAME || "service-account-audrey";
-    this.password = process.env.PMP_PASSWORD || "admin";
+      import.meta.env.VITE_PMP_USERNAME || "service-account-audrey";
+    this.password = import.meta.env.VITE_PMP_PASSWORD || "admin";
   }
 
   async authenticate(): Promise<void> {
