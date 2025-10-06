@@ -2,11 +2,11 @@ import { json, type RequestHandler } from "@sveltejs/kit";
 import { Client } from "pg";
 import {
   DB_HOST,
-  DB_NAME,
-  DB_PASSWORD,
   DB_PORT,
   DB_USER,
-} from "$lib/server/env";
+  DB_PASSWORD,
+  DB_NAME,
+} from "$env/static/private";
 
 // Database connection configuration
 const dbConfig = {
