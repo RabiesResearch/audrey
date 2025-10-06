@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/RabiesResearch/audrey/compare/v1.0.2...v1.1.0) (2025-10-06)
+
+
+### Features
+
+* ✨ Add Google OAuth whitelist with PMP integration ([#65](https://github.com/RabiesResearch/audrey/issues/65)) ([0d40ee5](https://github.com/RabiesResearch/audrey/commit/0d40ee5c18b284260b4e5f57671233543c51c993))
+
 ## [1.0.2](https://github.com/RabiesResearch/audrey/compare/v1.0.1...v1.0.2) (2025-07-10)
 
 
