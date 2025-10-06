@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/RabiesResearch/audrey/compare/v1.1.0...v1.2.0) (2025-10-06)
+
+
+### Features
+
+* :sparkles: minor improvement to handling OAuth on netlify previews ([10d0dd9](https://github.com/RabiesResearch/audrey/commit/10d0dd903feadd4ad07c552597be86b747122e48))
+
 # [1.1.0](https://github.com/RabiesResearch/audrey/compare/v1.0.2...v1.1.0) (2025-10-06)
 
 
