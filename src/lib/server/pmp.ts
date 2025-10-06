@@ -142,13 +142,14 @@ class PMPClient {
 
       const data: PMPUserWhitelist[] = await response.json();
       const normalizedEmail = email.toLowerCase().trim();
-      
+
       // Find user and return their regions
-      const user = data.find((u) => 
-        u.email.toLowerCase().trim() === normalizedEmail && 
-        u.active !== false
+      const user = data.find(
+        (u) =>
+          u.email.toLowerCase().trim() === normalizedEmail &&
+          u.active !== false,
       );
-      
+
       return user?.regions || [];
     } catch (error) {
       console.error("Failed to fetch user regions from PMP:", error);

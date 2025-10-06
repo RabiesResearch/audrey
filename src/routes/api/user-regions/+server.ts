@@ -12,10 +12,10 @@ export const GET: RequestHandler = async ({ locals }) => {
 
     // Get user's allowed regions from PMP
     const allowedRegionNames = await getUserAllowedRegions(session.user.email);
-    
+
     // Get all regions and districts to match names with IDs
     const allRegionsAndDistricts = await getAllRegionsAndDistricts();
-    
+
     // In development mode or if PMP returns empty, return all regions
     if (allowedRegionNames.length === 0) {
       // Group by region to avoid duplicates
@@ -25,18 +25,18 @@ export const GET: RequestHandler = async ({ locals }) => {
           regionsMap.set(item.regionID, {
             regionID: item.regionID,
             regionName: item.regionName,
-            districts: []
+            districts: [],
           });
         }
         regionsMap.get(item.regionID).districts.push({
           districtID: item.districtID,
-          districtName: item.districtName
+          districtName: item.districtName,
         });
       });
-      
-      return json({ 
+
+      return json({
         regions: Array.from(regionsMap.values()),
-        isAllRegions: true 
+        isAllRegions: true,
       });
     }
 
@@ -48,25 +48,22 @@ export const GET: RequestHandler = async ({ locals }) => {
           allowedRegions.set(item.regionID, {
             regionID: item.regionID,
             regionName: item.regionName,
-            districts: []
+            districts: [],
           });
         }
         allowedRegions.get(item.regionID).districts.push({
           districtID: item.districtID,
-          districtName: item.districtName
+          districtName: item.districtName,
         });
       }
     });
 
-    return json({ 
+    return json({
       regions: Array.from(allowedRegions.values()),
-      isAllRegions: false 
+      isAllRegions: false,
     });
   } catch (error) {
     console.error("Error fetching user regions:", error);
-    return json(
-      { error: "Failed to fetch user regions" },
-      { status: 500 }
-    );
+    return json({ error: "Failed to fetch user regions" }, { status: 500 });
   }
 };

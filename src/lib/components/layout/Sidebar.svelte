@@ -46,7 +46,7 @@
   // Month selector
   let monthDropdownOpen = false;
   let dataRetrievedAt: string = "";
-  
+
   // Export modal state
   let showExportModal = false;
 

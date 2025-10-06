@@ -30,12 +30,12 @@
     try {
       isLoading = true;
       error = null;
-      
+
       const response = await fetch("/api/user-regions");
       if (!response.ok) {
         throw new Error("Failed to fetch user regions");
       }
-      
+
       const data = await response.json();
       regions = data.regions;
     } catch (err) {
@@ -75,15 +75,15 @@
     if (!selectedDistricts[regionId]) {
       selectedDistricts[regionId] = new Set();
     }
-    
+
     if (selectedDistricts[regionId].has(districtId)) {
       selectedDistricts[regionId].delete(districtId);
     } else {
       selectedDistricts[regionId].add(districtId);
     }
-    
+
     selectedDistricts = selectedDistricts;
-    
+
     // If no districts selected for this region, uncheck the region
     if (selectedDistricts[regionId].size === 0) {
       selectedRegions.delete(regionId);
@@ -96,10 +96,12 @@
   }
 
   function selectAllDistrictsForRegion(regionId: string) {
-    const region = regions.find(r => r.regionID === regionId);
+    const region = regions.find((r) => r.regionID === regionId);
     if (!region) return;
-    
-    selectedDistricts[regionId] = new Set(region.districts.map(d => d.districtID));
+
+    selectedDistricts[regionId] = new Set(
+      region.districts.map((d) => d.districtID),
+    );
     selectedRegions.add(regionId);
     selectedRegions = selectedRegions;
     selectedDistricts = selectedDistricts;
@@ -113,12 +115,12 @@
 
     try {
       isExporting = true;
-      
+
       // Convert sets to arrays for API
       const regionsArray = Array.from(selectedRegions);
       const districtsObject: { [key: string]: string[] } = {};
-      
-      Object.keys(selectedDistricts).forEach(regionId => {
+
+      Object.keys(selectedDistricts).forEach((regionId) => {
         districtsObject[regionId] = Array.from(selectedDistricts[regionId]);
       });
 
@@ -145,7 +147,10 @@
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = response.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] || "export.csv";
+        a.download =
+          response.headers
+            .get("Content-Disposition")
+            ?.match(/filename="(.+)"/)?.[1] || "export.csv";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -153,11 +158,13 @@
       } else {
         // Handle JSON response
         const data = await response.json();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: "application/json",
+        });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `rabies-data-export-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `rabies-data-export-${new Date().toISOString().split("T")[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -190,6 +197,8 @@
 </script>
 
 {#if isOpen}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
   <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     on:click={handleClose}
@@ -198,6 +207,8 @@
     aria-modal="true"
     tabindex="-1"
   >
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
     <div
       class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-lg"
       on:click|stopPropagation
@@ -237,17 +248,23 @@
         </div>
       {:else}
         <div class="mb-6">
-          <h3 class="mb-2 text-lg font-medium text-gray-900">Select Regions and Districts</h3>
+          <h3 class="mb-2 text-lg font-medium text-gray-900">
+            Select Regions and Districts
+          </h3>
           <p class="mb-4 text-sm text-gray-600">
-            Choose the regions and districts you want to export data for. You can select entire regions or specific districts within regions.
+            Choose the regions and districts you want to export data for. You
+            can select entire regions or specific districts within regions.
           </p>
 
-          <div class="max-h-64 overflow-y-auto rounded border border-gray-200 bg-white">
+          <div
+            class="max-h-64 overflow-y-auto rounded border border-gray-200 bg-white"
+          >
             {#each regions as region}
               {@const isExpanded = expandedRegions.has(region.regionID)}
               {@const isRegionSelected = selectedRegions.has(region.regionID)}
-              {@const regionDistricts = selectedDistricts[region.regionID] || new Set()}
-              
+              {@const regionDistricts =
+                selectedDistricts[region.regionID] || new Set()}
+
               <div class="border-b border-gray-100 last:border-b-0">
                 <div class="flex items-center p-3">
                   <button
@@ -261,8 +278,10 @@
                       theme="solid"
                     />
                   </button>
-                  
-                  <label class="flex min-w-0 flex-1 cursor-pointer items-center">
+
+                  <label
+                    class="flex min-w-0 flex-1 cursor-pointer items-center"
+                  >
                     <input
                       type="checkbox"
                       class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -270,15 +289,20 @@
                       on:change={() => toggleRegionSelected(region.regionID)}
                     />
                     <div class="min-w-0 flex-1">
-                      <div class="font-medium text-gray-900">{region.regionName}</div>
-                      <div class="text-sm text-gray-500">{region.districts.length} districts</div>
+                      <div class="font-medium text-gray-900">
+                        {region.regionName}
+                      </div>
+                      <div class="text-sm text-gray-500">
+                        {region.districts.length} districts
+                      </div>
                     </div>
                   </label>
-                  
+
                   {#if isRegionSelected && region.districts.length > 0}
                     <button
                       class="ml-2 text-xs text-blue-600 hover:text-blue-800"
-                      on:click={() => selectAllDistrictsForRegion(region.regionID)}
+                      on:click={() =>
+                        selectAllDistrictsForRegion(region.regionID)}
                     >
                       Select All
                     </button>
@@ -288,14 +312,22 @@
                 {#if isExpanded && region.districts.length > 0}
                   <div class="ml-8 border-l-2 border-gray-100 pb-2">
                     {#each region.districts as district}
-                      <label class="flex cursor-pointer items-center p-2 hover:bg-gray-50">
+                      <label
+                        class="flex cursor-pointer items-center p-2 hover:bg-gray-50"
+                      >
                         <input
                           type="checkbox"
                           class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           checked={regionDistricts.has(district.districtID)}
-                          on:change={() => toggleDistrictSelected(region.regionID, district.districtID)}
+                          on:change={() =>
+                            toggleDistrictSelected(
+                              region.regionID,
+                              district.districtID,
+                            )}
                         />
-                        <span class="text-sm text-gray-700">{district.districtName}</span>
+                        <span class="text-sm text-gray-700"
+                          >{district.districtName}</span
+                        >
                       </label>
                     {/each}
                   </div>
