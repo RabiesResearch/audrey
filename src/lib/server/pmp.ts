@@ -50,7 +50,7 @@ class PMPClient {
       this.accessToken = data.access_token;
       this.refreshToken = data.refresh_token;
     } catch (error) {
-      console.error("Failed to authenticate with PMP:", error);
+  console.error("[PMP] Failed to authenticate with PMP:", error);
       throw error;
     }
   }
@@ -76,7 +76,7 @@ class PMPClient {
       const data: PMPRefreshResponse = await response.json();
       this.accessToken = data.access_token;
     } catch (error) {
-      console.error("Failed to refresh PMP token:", error);
+  console.error("[PMP] Failed to refresh PMP token:", error);
       // If refresh fails, try to re-authenticate
       await this.authenticate();
     }
@@ -110,7 +110,7 @@ class PMPClient {
         .filter((user) => user.active !== false)
         .map((user) => user.email);
     } catch (error) {
-      console.error("Failed to fetch whitelist from PMP:", error);
+  console.error("[PMP] Failed to fetch whitelist from PMP:", error);
       throw error;
     }
   }
@@ -156,7 +156,7 @@ class PMPClient {
 
       return user?.regions || [];
     } catch (error) {
-      console.error("Failed to fetch user regions from PMP:", error);
+  console.error("[PMP] Failed to fetch user regions from PMP:", error);
       throw error;
     }
   }
@@ -180,17 +180,17 @@ export async function isEmailWhitelisted(email: string): Promise<boolean> {
     const isWhitelisted = whitelist.includes(normalizedEmail);
 
     console.log(
-      `Whitelist check for ${normalizedEmail}: ${isWhitelisted ? "ALLOWED" : "DENIED"}`,
+      `[PMP] Whitelist check for ${normalizedEmail}: ${isWhitelisted ? "ALLOWED" : "DENIED"}`,
     );
     return isWhitelisted;
   } catch (error) {
-    console.error("Error checking email whitelist:", error);
+  console.error("[PMP] Error checking email whitelist:", error);
 
     // In case of PMP unavailability, or NNetlify previews with dynamic domains
     // We want to allow access in development but deny in production.
     // For security, we default to denying access.
     if (import.meta.env.DEV) {
-      console.warn("Development mode: PMP unavailable, allowing access");
+  console.warn("[PMP] Development mode: PMP unavailable, allowing access");
       return true;
     }
 
@@ -217,11 +217,11 @@ export async function getUserAllowedRegions(
     const result = await client.getUserRegions(email);
     return result;
   } catch (error) {
-    console.error("Error fetching user regions:", error);
+  console.error("[PMP] Error fetching user regions:", error);
 
     // In development mode, return all available regions
     if (import.meta.env.DEV) {
-      console.warn("Development mode: PMP unavailable, returning all regions");
+  console.warn("[PMP] Development mode: PMP unavailable, returning all regions");
       // This would need to be imported from api.ts, but for now return empty array
       return [];
     }

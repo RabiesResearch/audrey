@@ -32,13 +32,13 @@
       error = null;
 
       const response = await fetch("/api/user-regions");
-      console.log("[ExportDataModal] /api/user-regions response status:", response.status);
+  console.log("[Modal] /api/user-regions response status:", response.status);
       const responseClone = response.clone();
       let responseText;
       try {
         responseText = await responseClone.text();
       } catch (e) {
-        console.warn("[ExportDataModal] Could not read response text:", e);
+  console.warn("[Modal] Could not read response text:", e);
       }
       if (!response.ok) {
         throw new Error("Failed to fetch user regions");
@@ -46,9 +46,9 @@
 
       const data = await response.json();
       regions = data.regions;
-      console.log("[ExportDataModal] Regions set:", regions);
+  console.log("[Modal] Regions set:", regions);
     } catch (err) {
-      console.error("[ExportDataModal] Error loading user regions:", err);
+  console.error("[Modal] Error loading user regions:", err);
       error = err instanceof Error ? err.message : "Unknown error";
     } finally {
       isLoading = false;
@@ -183,7 +183,7 @@
       // Close modal after successful export
       handleClose();
     } catch (err) {
-      console.error("Error exporting data:", err);
+  console.error("[Modal] Error exporting data:", err);
       alert(err instanceof Error ? err.message : "Export failed");
     } finally {
       isExporting = false;
@@ -195,19 +195,19 @@
   }
 
   onMount(() => {
-    console.log("[ExportDataModal] onMount called. isOpen:", isOpen);
+  console.log("[Modal] onMount called. isOpen:", isOpen);
     if (isOpen) {
-      console.log("[ExportDataModal] onMount: isOpen is true, calling loadUserRegions()");
+  console.log("[Modal] onMount: isOpen is true, calling loadUserRegions()");
       loadUserRegions();
     }
   });
 
   $: if (isOpen) {
-    console.log("[ExportDataModal] $: isOpen changed to", isOpen);
+  console.log("[Modal] $: isOpen changed to", isOpen);
     if (isOpen) {
       regions = [];
       isLoading = false;
-      console.log("[ExportDataModal] $: isOpen true, resetting regions and isLoading, calling loadUserRegions()");
+  console.log("[Modal] $: isOpen true, resetting regions and isLoading, calling loadUserRegions()");
       loadUserRegions();
     }
   }

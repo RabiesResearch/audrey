@@ -37,7 +37,7 @@ export async function fetchMonthlyData(
 
     return result.data;
   } catch (error) {
-    console.error("API request error:", error);
+  console.error("[API] API request error:", error);
     throw new Error(
       `Failed to fetch data from API: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
