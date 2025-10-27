@@ -32,14 +32,23 @@
       error = null;
 
       const response = await fetch("/api/user-regions");
+      console.log("[ExportDataModal] /api/user-regions response status:", response.status);
+      const responseClone = response.clone();
+      let responseText;
+      try {
+        responseText = await responseClone.text();
+      } catch (e) {
+        console.warn("[ExportDataModal] Could not read response text:", e);
+      }
       if (!response.ok) {
         throw new Error("Failed to fetch user regions");
       }
 
       const data = await response.json();
       regions = data.regions;
+      console.log("[ExportDataModal] Regions set:", regions);
     } catch (err) {
-      console.error("Error loading user regions:", err);
+      console.error("[ExportDataModal] Error loading user regions:", err);
       error = err instanceof Error ? err.message : "Unknown error";
     } finally {
       isLoading = false;
@@ -186,13 +195,21 @@
   }
 
   onMount(() => {
+    console.log("[ExportDataModal] onMount called. isOpen:", isOpen);
     if (isOpen) {
+      console.log("[ExportDataModal] onMount: isOpen is true, calling loadUserRegions()");
       loadUserRegions();
     }
   });
 
-  $: if (isOpen && regions.length === 0 && !isLoading) {
-    loadUserRegions();
+  $: if (isOpen) {
+    console.log("[ExportDataModal] $: isOpen changed to", isOpen);
+    if (isOpen) {
+      regions = [];
+      isLoading = false;
+      console.log("[ExportDataModal] $: isOpen true, resetting regions and isLoading, calling loadUserRegions()");
+      loadUserRegions();
+    }
   }
 </script>
 
@@ -247,95 +264,105 @@
           Error: {error}
         </div>
       {:else}
-        <div class="mb-6">
-          <h3 class="mb-2 text-lg font-medium text-gray-900">
-            Select Regions and Districts
-          </h3>
-          <p class="mb-4 text-sm text-gray-600">
-            Choose the regions and districts you want to export data for. You
-            can select entire regions or specific districts within regions.
-          </p>
+        {#if regions.length === 0}
+          <div class="flex flex-col items-center justify-center p-8 text-gray-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 00-4-4H5a2 2 0 012-2h10a2 2 0 012 2h-.01a4 4 0 00-4 4v2m-6 0h6" />
+            </svg>
+            <div class="mb-2 text-lg font-medium">No regions available</div>
+            <div class="text-sm">You do not have access to any regions, or there was a problem loading them.</div>
+          </div>
+        {:else}
+          <div class="mb-6">
+            <h3 class="mb-2 text-lg font-medium text-gray-900">
+              Select Regions and Districts
+            </h3>
+            <p class="mb-4 text-sm text-gray-600">
+              Choose the regions and districts you want to export data for. You
+              can select entire regions or specific districts within regions.
+            </p>
 
-          <div
-            class="max-h-64 overflow-y-auto rounded border border-gray-200 bg-white"
-          >
-            {#each regions as region}
-              {@const isExpanded = expandedRegions.has(region.regionID)}
-              {@const isRegionSelected = selectedRegions.has(region.regionID)}
-              {@const regionDistricts =
-                selectedDistricts[region.regionID] || new Set()}
+            <div
+              class="max-h-64 overflow-y-auto rounded border border-gray-200 bg-white"
+            >
+              {#each regions as region}
+                {@const isExpanded = expandedRegions.has(region.regionID)}
+                {@const isRegionSelected = selectedRegions.has(region.regionID)}
+                {@const regionDistricts =
+                  selectedDistricts[region.regionID] || new Set()}
 
-              <div class="border-b border-gray-100 last:border-b-0">
-                <div class="flex items-center p-3">
-                  <button
-                    class="mr-2 flex-shrink-0"
-                    on:click={() => toggleRegionExpanded(region.regionID)}
-                    aria-label="Toggle region expansion"
-                  >
-                    <Icon
-                      src={isExpanded ? ChevronDown : ChevronRight}
-                      size="1.2em"
-                      theme="solid"
-                    />
-                  </button>
-
-                  <label
-                    class="flex min-w-0 flex-1 cursor-pointer items-center"
-                  >
-                    <input
-                      type="checkbox"
-                      class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      checked={isRegionSelected}
-                      on:change={() => toggleRegionSelected(region.regionID)}
-                    />
-                    <div class="min-w-0 flex-1">
-                      <div class="font-medium text-gray-900">
-                        {region.regionName}
-                      </div>
-                      <div class="text-sm text-gray-500">
-                        {region.districts.length} districts
-                      </div>
-                    </div>
-                  </label>
-
-                  {#if isRegionSelected && region.districts.length > 0}
+                <div class="border-b border-gray-100 last:border-b-0">
+                  <div class="flex items-center p-3">
                     <button
-                      class="ml-2 text-xs text-blue-600 hover:text-blue-800"
-                      on:click={() =>
-                        selectAllDistrictsForRegion(region.regionID)}
+                      class="mr-2 flex-shrink-0"
+                      on:click={() => toggleRegionExpanded(region.regionID)}
+                      aria-label="Toggle region expansion"
                     >
-                      Select All
+                      <Icon
+                        src={isExpanded ? ChevronDown : ChevronRight}
+                        size="1.2em"
+                        theme="solid"
+                      />
                     </button>
+
+                    <label
+                      class="flex min-w-0 flex-1 cursor-pointer items-center"
+                    >
+                      <input
+                        type="checkbox"
+                        class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        checked={isRegionSelected}
+                        on:change={() => toggleRegionSelected(region.regionID)}
+                      />
+                      <div class="min-w-0 flex-1">
+                        <div class="font-medium text-gray-900">
+                          {region.regionName}
+                        </div>
+                        <div class="text-sm text-gray-500">
+                          {region.districts.length} districts
+                        </div>
+                      </div>
+                    </label>
+
+                    {#if isRegionSelected && region.districts.length > 0}
+                      <button
+                        class="ml-2 text-xs text-blue-600 hover:text-blue-800"
+                        on:click={() =>
+                          selectAllDistrictsForRegion(region.regionID)}
+                      >
+                        Select All
+                      </button>
+                    {/if}
+                  </div>
+
+                  {#if isExpanded && region.districts.length > 0}
+                    <div class="ml-8 border-l-2 border-gray-100 pb-2">
+                      {#each region.districts as district}
+                        <label
+                          class="flex cursor-pointer items-center p-2 hover:bg-gray-50"
+                        >
+                          <input
+                            type="checkbox"
+                            class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            checked={regionDistricts.has(district.districtID)}
+                            on:change={() =>
+                              toggleDistrictSelected(
+                                region.regionID,
+                                district.districtID,
+                              )}
+                          />
+                          <span class="text-sm text-gray-700"
+                            >{district.districtName}</span
+                          >
+                        </label>
+                      {/each}
+                    </div>
                   {/if}
                 </div>
-
-                {#if isExpanded && region.districts.length > 0}
-                  <div class="ml-8 border-l-2 border-gray-100 pb-2">
-                    {#each region.districts as district}
-                      <label
-                        class="flex cursor-pointer items-center p-2 hover:bg-gray-50"
-                      >
-                        <input
-                          type="checkbox"
-                          class="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          checked={regionDistricts.has(district.districtID)}
-                          on:change={() =>
-                            toggleDistrictSelected(
-                              region.regionID,
-                              district.districtID,
-                            )}
-                        />
-                        <span class="text-sm text-gray-700"
-                          >{district.districtName}</span
-                        >
-                      </label>
-                    {/each}
-                  </div>
-                {/if}
-              </div>
-            {/each}
+              {/each}
+            </div>
           </div>
-        </div>
+        {/if}
 
         <div class="mb-6">
           <h3 class="mb-2 text-lg font-medium text-gray-900">Export Format</h3>

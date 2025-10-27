@@ -1,7 +1,9 @@
 import { monthlyDataCache, type MonthlyDataRow } from "$lib/stores/uiStore";
 import { get } from "svelte/store";
 
-export async function fetchMonthlyData(): Promise<MonthlyDataRow[]> {
+export async function fetchMonthlyData(
+  fetchFn?: typeof fetch,
+): Promise<MonthlyDataRow[]> {
   // Check if we have cached data that's less than 60 minutes old
   const cachedData = get(monthlyDataCache);
   const now = Date.now();
@@ -14,7 +16,8 @@ export async function fetchMonthlyData(): Promise<MonthlyDataRow[]> {
 
   try {
     // Make HTTP request to our API endpoint
-    const response = await fetch("/api/monthly-tz");
+    const _fetch = fetchFn || fetch;
+    const response = await _fetch("/api/monthly-tz");
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

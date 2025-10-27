@@ -115,22 +115,29 @@ class PMPClient {
     }
   }
 
-  async getUserRegions(email: string): Promise<string[]> {
+  async getUserRegions(
+    email: string,
+    fetchFn?: typeof fetch,
+  ): Promise<string[]> {
     if (!this.accessToken) {
       await this.authenticate();
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/audrey/v1/user_whitelist`, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-        },
-      });
+      const _fetch = fetchFn || fetch;
+      const response = await _fetch(
+        `${this.baseUrl}/audrey/v1/user_whitelist`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+  },
+      );
 
       if (response.status === 401) {
         // Token might be expired, try to refresh
         await this.refreshAccessToken();
-        return this.getUserRegions(email);
+        return this.getUserRegions(email, fetchFn);
       }
 
       if (!response.ok) {
@@ -192,10 +199,23 @@ export async function isEmailWhitelisted(email: string): Promise<boolean> {
   }
 }
 
-export async function getUserAllowedRegions(email: string): Promise<string[]> {
+export async function getUserAllowedRegions(
+  email: string,
+  fetchFn?: typeof fetch,
+): Promise<string[]> {
   try {
     const client = getPMPClient();
-    return await client.getUserRegions(email);
+    // If client.getUserRegions uses fetch, pass fetchFn if provided
+    if (
+      fetchFn &&
+      typeof client.getUserRegions === "function" &&
+      client.getUserRegions.length > 1
+    ) {
+      const result = await client.getUserRegions(email, fetchFn);
+      return result;
+    }
+    const result = await client.getUserRegions(email);
+    return result;
   } catch (error) {
     console.error("Error fetching user regions:", error);
 

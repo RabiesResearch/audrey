@@ -325,11 +325,10 @@ export async function getPatientAndStockNumbers(
 
 let allRegionsAndDistrictsCache: RegionAndDistrict[] | null = null;
 
-export async function getAllRegionsAndDistricts(): Promise<
-  RegionAndDistrict[]
-> {
+export async function getAllRegionsAndDistricts(fetchFn?: typeof fetch): Promise<RegionAndDistrict[]> {
   if (allRegionsAndDistrictsCache) return allRegionsAndDistrictsCache;
-  const rows = await fetchMonthlyData();
+  // If fetchMonthlyData uses fetch, pass fetchFn if provided
+  const rows = fetchFn && fetchMonthlyData.length > 0 ? await fetchMonthlyData(fetchFn) : await fetchMonthlyData();
   const seen = new Set<string>();
   const result: RegionAndDistrict[] = [];
   for (const row of rows) {
