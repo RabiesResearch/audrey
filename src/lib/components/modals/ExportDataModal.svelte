@@ -269,7 +269,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 00-4-4H5a2 2 0 012-2h10a2 2 0 012 2h-.01a4 4 0 00-4 4v2m-6 0h6" />
             </svg>
-            <div class="mb-2 text-lg font-medium">No regions available</div>
+            <div class="mb-2 text-lg font-medium">No regions available or no data matching filters</div>
             <div class="text-sm">You do not have access to any regions, or there was a problem loading them.</div>
           </div>
         {:else}

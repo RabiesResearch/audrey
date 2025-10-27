@@ -12,17 +12,22 @@ export const GET: RequestHandler = async ({ locals, fetch }) => {
     }
 
     // Get user's allowed regions from PMP
-    let allowedRegionNames = await getUserAllowedRegions(
+    const allowedRegionsRaw = await getUserAllowedRegions(
       session.user.email,
       fetch,
     );
-    // If the result is an array of objects, map to names
+    const allowedRegionIDs = allowedRegionsRaw.map((item) => item.id);
+    console.log("[API] Allowed region IDs from PMP:", allowedRegionIDs);
 
     // Get all regions and districts to match names with IDs
     const allRegionsAndDistricts = await getAllRegionsAndDistricts(fetch);
+    console.log(
+      "[API] All regions and districts fetched:",
+      allRegionsAndDistricts,
+    );
 
     // In development mode or if PMP returns empty, return all regions
-    if (allowedRegionNames.length === 0) {
+    if (allowedRegionIDs.length === 0) {
       // Group by region to avoid duplicates
       const regionsMap = new Map();
       allRegionsAndDistricts.forEach((item) => {
@@ -46,15 +51,9 @@ export const GET: RequestHandler = async ({ locals, fetch }) => {
       return json(result);
     }
 
-    // Log all region names for debugging
-    // Normalize names for comparison
-    const normalizedAllowed = allowedRegionNames.map((n) =>
-      n.toLowerCase().trim(),
-    );
     const allowedRegions = new Map();
     allRegionsAndDistricts.forEach((item) => {
-      const normalizedRegion = item.regionName.toLowerCase().trim();
-      if (normalizedAllowed.includes(normalizedRegion)) {
+      if (allowedRegionIDs.includes(item.regionID)) {
         if (!allowedRegions.has(item.regionID)) {
           allowedRegions.set(item.regionID, {
             regionID: item.regionID,
@@ -73,6 +72,7 @@ export const GET: RequestHandler = async ({ locals, fetch }) => {
       regions: Array.from(allowedRegions.values()),
       isAllRegions: false,
     };
+    console.log("[API] Final allowed regions to return:", result);
     return json(result);
   } catch (error) {
     console.error("[API] Error fetching user regions:", error);
