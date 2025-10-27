@@ -3,6 +3,8 @@
   import Map from "$lib/components/pages/map.svelte";
   import { onMount } from "svelte";
   import toast from "svelte-hot-french-toast";
+  import { discoverPageSections } from "$lib/utils/pageDiscovery";
+  import { pageSections } from "$lib/stores/uiStore";
 
   // Page navigation state
   let currentPageIndex = 0;
@@ -36,6 +38,10 @@
     pageIds = Array.from(pageElements)
       .map((el) => el.id)
       .filter((id) => id.length > 0);
+
+    // Update the page sections store for the sidebar
+    const sections = discoverPageSections();
+    pageSections.set(sections);
 
     // Example notification
     setTimeout(() => {
