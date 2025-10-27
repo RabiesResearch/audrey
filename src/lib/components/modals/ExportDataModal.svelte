@@ -7,6 +7,7 @@
   const dispatch = createEventDispatcher();
 
   export let isOpen = false;
+  export let availableMonths: string[] = [];
 
   type Region = {
     regionID: string;
@@ -26,29 +27,29 @@
   let isExporting = false;
   let exportFormat = "csv";
 
+  // Month filtering
+  let startMonth: string | null = null;
+  let endMonth: string | null = null;
+
   async function loadUserRegions() {
     try {
       isLoading = true;
       error = null;
 
+      // Fetch user regions
       const response = await fetch("/api/user-regions");
-  console.log("[Modal] /api/user-regions response status:", response.status);
-      const responseClone = response.clone();
-      let responseText;
-      try {
-        responseText = await responseClone.text();
-      } catch (e) {
-  console.warn("[Modal] Could not read response text:", e);
-      }
       if (!response.ok) {
         throw new Error("Failed to fetch user regions");
       }
-
       const data = await response.json();
       regions = data.regions;
-  console.log("[Modal] Regions set:", regions);
+
+      // Set default months if available
+      if (availableMonths.length > 0) {
+        startMonth = availableMonths[availableMonths.length - 1]; // oldest
+        endMonth = availableMonths[0]; // newest
+      }
     } catch (err) {
-  console.error("[Modal] Error loading user regions:", err);
       error = err instanceof Error ? err.message : "Unknown error";
     } finally {
       isLoading = false;
@@ -142,6 +143,8 @@
           selectedRegions: regionsArray,
           selectedDistricts: districtsObject,
           format: exportFormat,
+          startMonth,
+          endMonth,
         }),
       });
 
@@ -183,7 +186,7 @@
       // Close modal after successful export
       handleClose();
     } catch (err) {
-  console.error("[Modal] Error exporting data:", err);
+      console.error("[Modal] Error exporting data:", err);
       alert(err instanceof Error ? err.message : "Export failed");
     } finally {
       isExporting = false;
@@ -195,19 +198,15 @@
   }
 
   onMount(() => {
-  console.log("[Modal] onMount called. isOpen:", isOpen);
     if (isOpen) {
-  console.log("[Modal] onMount: isOpen is true, calling loadUserRegions()");
       loadUserRegions();
     }
   });
 
   $: if (isOpen) {
-  console.log("[Modal] $: isOpen changed to", isOpen);
     if (isOpen) {
       regions = [];
       isLoading = false;
-  console.log("[Modal] $: isOpen true, resetting regions and isLoading, calling loadUserRegions()");
       loadUserRegions();
     }
   }
@@ -257,7 +256,10 @@
 
       {#if isLoading}
         <div class="flex justify-center p-8">
-          <LoadingSpinner size="lg" message="Loading available regions..." />
+          <LoadingSpinner
+            size="lg"
+            message="Loading available regions and months..."
+          />
         </div>
       {:else if error}
         <div class="p-4 text-center text-red-500">
@@ -265,12 +267,30 @@
         </div>
       {:else}
         {#if regions.length === 0}
-          <div class="flex flex-col items-center justify-center p-8 text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 00-4-4H5a2 2 0 012-2h10a2 2 0 012 2h-.01a4 4 0 00-4 4v2m-6 0h6" />
+          <div
+            class="flex flex-col items-center justify-center p-8 text-gray-500"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="mb-2 h-10 w-10"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 17v-2a4 4 0 00-4-4H5a2 2 0 012-2h10a2 2 0 012 2h-.01a4 4 0 00-4 4v2m-6 0h6"
+              />
             </svg>
-            <div class="mb-2 text-lg font-medium">No regions available or no data matching filters</div>
-            <div class="text-sm">You do not have access to any regions, or there was a problem loading them.</div>
+            <div class="mb-2 text-lg font-medium">
+              No regions available or no data matching filters
+            </div>
+            <div class="text-sm">
+              You do not have access to any regions, or there was a problem
+              loading them.
+            </div>
           </div>
         {:else}
           <div class="mb-6">
@@ -365,6 +385,45 @@
         {/if}
 
         <div class="mb-6">
+          <h3 class="mb-2 text-lg font-medium text-gray-900">
+            Filter by Month Range
+          </h3>
+          <div
+            class="mb-4 flex flex-col space-y-2 md:flex-row md:space-x-4 md:space-y-0"
+          >
+            <div class="flex-1">
+              <label
+                for="start-month"
+                class="mb-1 block text-sm font-medium text-gray-700"
+                >Start Month</label
+              >
+              <select
+                id="start-month"
+                class="w-full rounded border-gray-300 p-2"
+                bind:value={startMonth}
+              >
+                {#each [...availableMonths].reverse() as month}
+                  <option value={month}>{month}</option>
+                {/each}
+              </select>
+            </div>
+            <div class="flex-1">
+              <label
+                for="end-month"
+                class="mb-1 block text-sm font-medium text-gray-700"
+                >End Month</label
+              >
+              <select
+                id="end-month"
+                class="w-full rounded border-gray-300 p-2"
+                bind:value={endMonth}
+              >
+                {#each availableMonths as month}
+                  <option value={month}>{month}</option>
+                {/each}
+              </select>
+            </div>
+          </div>
           <h3 class="mb-2 text-lg font-medium text-gray-900">Export Format</h3>
           <div class="flex space-x-4">
             <label class="flex cursor-pointer items-center">

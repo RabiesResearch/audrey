@@ -265,5 +265,6 @@
 <!-- Export Data Modal -->
 <ExportDataModal
   isOpen={showExportModal}
+  {availableMonths}
   on:close={() => (showExportModal = false)}
 />

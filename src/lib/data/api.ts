@@ -23,6 +23,7 @@ export type RegionCasesStockData = {
   facilityName?: string;
   uniquePatients: number;
   vaccineStock: number;
+  date?: string;
 };
 
 export type RegionAndDistrict = {
@@ -325,10 +326,15 @@ export async function getPatientAndStockNumbers(
 
 let allRegionsAndDistrictsCache: RegionAndDistrict[] | null = null;
 
-export async function getAllRegionsAndDistricts(fetchFn?: typeof fetch): Promise<RegionAndDistrict[]> {
+export async function getAllRegionsAndDistricts(
+  fetchFn?: typeof fetch,
+): Promise<RegionAndDistrict[]> {
   if (allRegionsAndDistrictsCache) return allRegionsAndDistrictsCache;
   // If fetchMonthlyData uses fetch, pass fetchFn if provided
-  const rows = fetchFn && fetchMonthlyData.length > 0 ? await fetchMonthlyData(fetchFn) : await fetchMonthlyData();
+  const rows =
+    fetchFn && fetchMonthlyData.length > 0
+      ? await fetchMonthlyData(fetchFn)
+      : await fetchMonthlyData();
   const seen = new Set<string>();
   const result: RegionAndDistrict[] = [];
   for (const row of rows) {
@@ -518,6 +524,71 @@ export async function getCompletenessData(
           ? Math.round((reportingFacilities / totalFacilities) * 100)
           : 0;
     }
+  }
+
+  return result;
+}
+
+/**
+ * Get raw monthly data for export with row-level granularity
+ * Returns individual facility monthly reports with dates
+ */
+export async function getMonthlyDataForExport(
+  regionIDs: string[],
+  districtIDs: { [regionId: string]: string[] },
+  startMonth: string | null = null,
+  endMonth: string | null = null,
+): Promise<
+  Array<{
+    regionID: string;
+    regionName: string;
+    districtID: string;
+    districtName: string;
+    facilityID: string;
+    facilityName: string;
+    uniquePatients: number;
+    vaccineStock: number;
+    date: string;
+  }>
+> {
+  const rows = await fetchMonthlyData();
+  const result = [];
+
+  for (const row of rows) {
+    // Check if row matches selected regions/districts
+    const regionMatch = regionIDs.includes(row.tangis_region_id);
+    if (!regionMatch) continue;
+
+    // Check district filter
+    const regionDistrictFilter = districtIDs[row.tangis_region_id];
+    if (
+      regionDistrictFilter &&
+      regionDistrictFilter.length > 0 &&
+      !regionDistrictFilter.includes(row.tangis_district_council_id)
+    ) {
+      continue;
+    }
+
+    // Check month filter
+    if (startMonth || endMonth) {
+      const rowMonth = parseReportMonth(row.tally_report_month);
+      if (!rowMonth) continue;
+
+      if (startMonth && rowMonth < startMonth) continue;
+      if (endMonth && rowMonth > endMonth) continue;
+    }
+
+    result.push({
+      regionID: row.tangis_region_id,
+      regionName: row.region_name,
+      districtID: row.tangis_district_council_id,
+      districtName: row.district_council_name,
+      facilityID: row.tangis_facility_id,
+      facilityName: row.facility_name,
+      uniquePatients: Number(row.tally_total_patients ?? 0),
+      vaccineStock: Number(row.tally_total_vials ?? 0),
+      date: row.tally_report_month,
+    });
   }
 
   return result;

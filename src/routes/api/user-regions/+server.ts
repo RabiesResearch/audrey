@@ -21,10 +21,6 @@ export const GET: RequestHandler = async ({ locals, fetch }) => {
 
     // Get all regions and districts to match names with IDs
     const allRegionsAndDistricts = await getAllRegionsAndDistricts(fetch);
-    console.log(
-      "[API] All regions and districts fetched:",
-      allRegionsAndDistricts,
-    );
 
     // In development mode or if PMP returns empty, return all regions
     if (allowedRegionIDs.length === 0) {

@@ -2,7 +2,7 @@ import { json, type RequestHandler } from "@sveltejs/kit";
 import { getUserAllowedRegions } from "$lib/server/pmp";
 import {
   getAllRegionsAndDistricts,
-  getPatientAndStockNumbers,
+  getMonthlyDataForExport,
 } from "$lib/data/api";
 
 export const POST: RequestHandler = async ({ request, locals }) => {
@@ -17,20 +17,23 @@ export const POST: RequestHandler = async ({ request, locals }) => {
       selectedRegions,
       selectedDistricts,
       format = "csv",
+      startMonth = null,
+      endMonth = null,
     } = await request.json();
 
     // Validate user can access requested regions
     const allowedRegionNames = await getUserAllowedRegions(session.user.email);
+    const allowedRegionIDs = allowedRegionNames.map((item) => item.id);
     const allRegionsAndDistricts = await getAllRegionsAndDistricts();
 
     // Check if user has permission for selected regions
-    if (allowedRegionNames.length > 0) {
-      const allowedRegionIDs = allRegionsAndDistricts
-        .filter((item) => allowedRegionNames.includes(item.regionName))
+    if (allowedRegionIDs.length > 0) {
+      const allowedRegions = allRegionsAndDistricts
+        .filter((item) => allowedRegionIDs.includes(item.regionID))
         .map((item) => item.regionID);
 
       const unauthorizedRegions = selectedRegions.filter(
-        (regionId: string) => !allowedRegionIDs.includes(regionId),
+        (regionId: string) => !allowedRegions.includes(regionId),
       );
 
       if (unauthorizedRegions.length > 0) {
@@ -42,33 +45,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     }
 
     // Collect data for each selected region/district combination
-    const exportData = [];
-
-    for (const regionId of selectedRegions) {
-      const regionDistricts = selectedDistricts[regionId] || [];
-
-      if (regionDistricts.length === 0) {
-        // Export entire region
-        const data = await getPatientAndStockNumbers(regionId, null);
-        exportData.push(
-          ...data.map((item) => ({
-            ...item,
-            exportLevel: "region",
-          })),
-        );
-      } else {
-        // Export specific districts
-        for (const districtId of regionDistricts) {
-          const data = await getPatientAndStockNumbers(regionId, districtId);
-          exportData.push(
-            ...data.map((item) => ({
-              ...item,
-              exportLevel: "district",
-            })),
-          );
-        }
-      }
-    }
+    const exportData = await getMonthlyDataForExport(
+      selectedRegions,
+      selectedDistricts,
+      startMonth,
+      endMonth,
+    );
 
     if (format === "json") {
       return json({
@@ -79,27 +61,21 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     } else {
       // Generate CSV
       const csvHeaders = [
-        "Region ID",
         "Region Name",
-        "District ID",
         "District Name",
-        "Facility ID",
         "Facility Name",
         "Unique Patients",
         "Vaccine Stock",
-        "Export Level",
+        "Date",
       ];
 
       const csvRows = exportData.map((item) => [
-        item.regionID || "",
         item.regionName || "",
-        item.districtID || "",
         item.districtName || "",
-        item.facilityID || "",
         item.facilityName || "",
         item.uniquePatients || 0,
         item.vaccineStock || 0,
-        item.exportLevel || "",
+        item.date || "",
       ]);
 
       const csvContent = [
