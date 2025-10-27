@@ -17,8 +17,6 @@ export const { handle } = SvelteKitAuth({
   },
   callbacks: {
     async signIn({ user, account }) {
-      console.log(process.env.AUTH_GOOGLE_ID);
-      console.log(process.env.AUTH_GOOGLE_SECRET);
       if (account?.provider === "google" && user.email) {
         try {
           const isAllowed = await isEmailWhitelisted(user.email);
