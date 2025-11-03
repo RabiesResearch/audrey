@@ -22,8 +22,8 @@ export const GET: RequestHandler = async ({ locals, fetch }) => {
     // Get all regions and districts to match names with IDs
     const allRegionsAndDistricts = await getAllRegionsAndDistricts(fetch);
 
-    // In development mode or if PMP returns empty, return all regions
-    if (allowedRegionIDs.length === 0) {
+    // In development mode and returns empty, return all regions
+    if (import.meta.env.DEV && allowedRegionIDs.length === 0) {
       // Group by region to avoid duplicates
       const regionsMap = new Map();
       allRegionsAndDistricts.forEach((item) => {
