@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/RabiesResearch/audrey/compare/v1.2.0...v1.3.0) (2025-11-03)
+
+
+### Features
+
+* ✨ add ability to download data for a region based on user whitelist ([#69](https://github.com/RabiesResearch/audrey/issues/69)) ([9e08011](https://github.com/RabiesResearch/audrey/commit/9e0801136d07b8ba674f5704f1ae436fce6c2112))
+
 # [1.2.0](https://github.com/RabiesResearch/audrey/compare/v1.1.0...v1.2.0) (2025-10-06)
 
 
