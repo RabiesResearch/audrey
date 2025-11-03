@@ -4,12 +4,7 @@ import { AUTH_SECRET } from "$env/static/private";
 import { isEmailWhitelisted } from "$lib/server/pmp";
 
 export const { handle } = SvelteKitAuth({
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID || "",
-      clientSecret: process.env.AUTH_GOOGLE_SECRET || "",
-    }),
-  ],
+  providers: [Google],
   basePath: "/auth",
   trustHost: true,
   secret: AUTH_SECRET,

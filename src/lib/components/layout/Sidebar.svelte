@@ -7,6 +7,7 @@
   import { onMount } from "svelte";
   import { version } from "$app/environment";
   import { signOut } from "@auth/sveltekit/client";
+  import ExportDataModal from "$lib/components/modals/ExportDataModal.svelte";
 
   export let availableMonths: string[] = [];
 
@@ -29,6 +30,8 @@
       '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />',
     table:
       '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />',
+    export:
+      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />',
     logout:
       '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />',
   };
@@ -43,6 +46,9 @@
   // Month selector
   let monthDropdownOpen = false;
   let dataRetrievedAt: string = "";
+
+  // Export modal state
+  let showExportModal = false;
 
   // Make monthOptions reactive to the prop
   $: monthOptions = availableMonths;
@@ -138,6 +144,25 @@
           {/each}
         </ul>
       </nav>
+
+      <!-- Export Button -->
+      <div class="mt-6">
+        <button
+          on:click={() => (showExportModal = true)}
+          class="hover:bg-primary-50 hover:text-primary-700 flex w-full items-center rounded-md px-3 py-2 text-gray-700 transition-colors"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="mr-3 h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            {@html icons.export}
+          </svg>
+          <span>Export Data</span>
+        </button>
+      </div>
 
       <!-- Logout Button -->
       <div class="mt-6">
@@ -236,3 +261,10 @@
     </div>
   </div>
 </aside>
+
+<!-- Export Data Modal -->
+<ExportDataModal
+  isOpen={showExportModal}
+  {availableMonths}
+  on:close={() => (showExportModal = false)}
+/>
