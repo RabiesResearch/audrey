@@ -19,7 +19,7 @@
     "@semantic-release/release-notes-generator": "^14.1.0",
     "@steeze-ui/svelte-icon": "^1.6.2",
     "@sveltejs/adapter-netlify": "^5.2.3",
-    "@sveltejs/kit": "^2.37.1",
+    "@sveltejs/kit": "^2.49.5",
     "@tailwindcss/vite": "^4.1.13",
     "@types/d3": "^7.4.3",
     "eslint": "^9.35.0",
