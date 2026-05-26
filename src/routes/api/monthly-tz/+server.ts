@@ -1,5 +1,6 @@
 import { json, type RequestHandler } from "@sveltejs/kit";
 import { Client } from "pg";
+import { getUserAllowedRegions } from "$lib/server/pmp";
 import {
   DB_HOST,
   DB_PORT,
@@ -22,10 +23,19 @@ const dbConfig = {
   idleTimeoutMillis: 30000,
 };
 
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ locals, fetch }) => {
   let client: Client | null = null;
 
   try {
+    // Only authenticated users; restrict rows to the user's PMP-allowed regions.
+    const session = await locals.auth();
+    if (!session?.user?.email) {
+      return json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const allowedRegions = await getUserAllowedRegions(session.user.email, fetch);
+    const allowedRegionIDs = allowedRegions.map((r) => r.id);
+    const hasRegionFilter = allowedRegionIDs.length > 0; // empty = all regions
+
     // Create PostgreSQL client and connect
     client = new Client(dbConfig);
     await client.connect();
@@ -45,10 +55,13 @@ export const GET: RequestHandler = async () => {
         report_full_date,
         "tally-report_month" as tally_report_month
       FROM monthly_tz 
+      ${hasRegionFilter ? "WHERE tangis_region_id = ANY($1)" : ""}
       ORDER BY "SubmissionDate" DESC, region_name, district_council_name, facility_name
     `;
 
-    const result = await client.query(query);
+    const result = hasRegionFilter
+      ? await client.query(query, [allowedRegionIDs])
+      : await client.query(query);
 
     // Transform database results to match CSV structure
     const parsedData = result.rows.map((row) => ({
