@@ -23,7 +23,7 @@ const dbConfig = {
   idleTimeoutMillis: 30000,
 };
 
-export const GET: RequestHandler = async ({ locals, fetch }) => {
+export const GET: RequestHandler = async ({ locals, fetch, url }) => {
   let client: Client | null = null;
 
   try {
@@ -32,6 +32,31 @@ export const GET: RequestHandler = async ({ locals, fetch }) => {
     if (!session?.user?.email) {
       return json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Reference mode: complete region/district list (names/IDs only, no tally
+    // data), unaffected by the per-user region filter. Used to build the full
+    // geography lookup; safe to expose as it carries no sensitive figures.
+    if (url.searchParams.get("scope") === "all") {
+      client = new Client(dbConfig);
+      await client.connect();
+      const refResult = await client.query(`
+        SELECT DISTINCT
+          region_name,
+          tangis_region_id,
+          district_council_name,
+          tangis_district_council_id
+        FROM monthly_tz
+        ORDER BY region_name, district_council_name
+      `);
+      const refData = refResult.rows.map((row) => ({
+        region_name: row.region_name || "",
+        tangis_region_id: row.tangis_region_id || "",
+        district_council_name: row.district_council_name || "",
+        tangis_district_council_id: row.tangis_district_council_id || "",
+      }));
+      return json({ success: true, data: refData, count: refData.length });
+    }
+
     const allowedRegions = await getUserAllowedRegions(session.user.email, fetch);
     const allowedRegionIDs = allowedRegions.map((r) => r.id);
     const hasRegionFilter = allowedRegionIDs.length > 0; // empty = all regions

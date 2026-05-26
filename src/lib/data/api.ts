@@ -330,11 +330,18 @@ export async function getAllRegionsAndDistricts(
   fetchFn?: typeof fetch,
 ): Promise<RegionAndDistrict[]> {
   if (allRegionsAndDistrictsCache) return allRegionsAndDistrictsCache;
-  // If fetchMonthlyData uses fetch, pass fetchFn if provided
-  const rows =
-    fetchFn && fetchMonthlyData.length > 0
-      ? await fetchMonthlyData(fetchFn)
-      : await fetchMonthlyData();
+  // Use the unfiltered reference list so the full geography is available
+  // regardless of the caller's allowed regions (and safe to cache globally).
+  const _fetch = fetchFn || fetch;
+  const response = await _fetch("/api/monthly-tz?scope=all");
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  const payload = await response.json();
+  if (!payload.success) {
+    throw new Error(payload.error || "Failed to fetch reference data");
+  }
+  const rows = payload.data;
   const seen = new Set<string>();
   const result: RegionAndDistrict[] = [];
   for (const row of rows) {
