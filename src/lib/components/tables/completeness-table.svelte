@@ -11,6 +11,55 @@
   let error: string | null = null;
   let expandedItems = new Set<string>();
 
+  // -------------------------------------------------------------------------
+  // Region whitelist (loaded once on mount from /api/user-regions).
+  //
+  //   - `null`            → no restriction (admin / unrestricted user).
+  //   - empty array `[]`  → user is whitelisted to ZERO regions.
+  //   - non-empty array   → only those region IDs are visible in the table.
+  //
+  // We pass this value into getCompletenessData() so the same data shaping
+  // function can be reused unchanged for both restricted and admin users.
+  // -------------------------------------------------------------------------
+  let allowedRegionIDs: string[] | null = [];
+
+  // Shape of the JSON returned by /api/user-regions.
+  type UserRegionsResponse = {
+    regions: { regionID: string; regionName: string }[];
+    isAllRegions: boolean;
+  };
+
+  async function loadAllowedRegions() {
+    let response: Response;
+    try {
+      response = await fetch("/api/user-regions");
+    } catch (err) {
+      console.error("[completeness] network error fetching user-regions:", err);
+      allowedRegionIDs = [];
+      return;
+    }
+
+    if (!response.ok) {
+      console.error(
+        "[completeness] /api/user-regions returned HTTP",
+        response.status,
+      );
+      allowedRegionIDs = [];
+      return;
+    }
+
+    const json = (await response.json()) as UserRegionsResponse;
+
+    if (json.isAllRegions) {
+      // Admin / unrestricted user → no whitelist filtering.
+      allowedRegionIDs = null;
+      return;
+    }
+
+    // Build a plain array of region IDs from the response.
+    allowedRegionIDs = json.regions.map((r) => r.regionID);
+  }
+
   // Get last 12 months for column headers
   let monthColumns: { display: string; key: string }[] = [];
 
@@ -120,8 +169,12 @@
       isLoading = true;
       error = null;
 
-      // Fetch completeness data
-      data = await getCompletenessData($selectedRegionID, $selectedDistrictID);
+      // Fetch completeness data, restricted to the user's allowed regions.
+      data = await getCompletenessData(
+        $selectedRegionID,
+        $selectedDistrictID,
+        allowedRegionIDs,
+      );
     } catch (err) {
       console.error("Error loading completeness data:", err);
       error = err instanceof Error ? err.message : "Unknown error";
@@ -133,11 +186,17 @@
   let unsubscribeRegion: (() => void) | undefined;
   let unsubscribeDistrict: (() => void) | undefined;
 
-  onMount(() => {
+  onMount(async () => {
     generateMonthColumns();
+
+    // Load the user's allowed regions FIRST so the very first call to
+    // loadCompletenessData already has the correct whitelist.
+    await loadAllowedRegions();
+
     loadCompletenessData();
 
-    // Subscribe to store changes
+    // Subscribe to store changes so the table refreshes when the user picks
+    // a different region/district in the header search.
     unsubscribeRegion = selectedRegionID.subscribe(() => {
       loadCompletenessData();
     });

@@ -361,6 +361,11 @@ export async function getAllRegionsAndDistricts(
 export async function getCompletenessData(
   regionID: string | null = null,
   districtID: string | null = null,
+  // The user's PMP-allowed region IDs.
+  //   - `null`          → no restriction (admin / unrestricted user).
+  //   - empty array     → the user can see no regions.
+  //   - non-empty array → the user can see only those regions.
+  allowedRegionIDs: string[] | null = null,
 ): Promise<CompletenessData[]> {
   const rows = await fetchMonthlyData();
 
@@ -387,12 +392,31 @@ export async function getCompletenessData(
     }
   }
 
-  // Get all unique facilities that match the filter criteria
-  const filteredRows = rows.filter(
-    (row: MonthlyDataRow) =>
-      (regionID == null || row.tangis_region_id === regionID) &&
-      (districtID == null || row.tangis_district_council_id === districtID),
-  );
+  // Keep only rows that match every active filter. Each condition is on its
+  // own line so it's obvious which filter is doing what.
+  const filteredRows = rows.filter((row: MonthlyDataRow) => {
+    // Region filter (when a specific region is selected in the UI).
+    if (regionID !== null && row.tangis_region_id !== regionID) {
+      return false;
+    }
+    // District filter (when a specific district is selected in the UI).
+    if (
+      districtID !== null &&
+      row.tangis_district_council_id !== districtID
+    ) {
+      return false;
+    }
+    // PMP region filter.
+    // null means unrestricted. An empty array means no regions are allowed.
+    if (allowedRegionIDs !== null) {
+      const regionIsAllowed = allowedRegionIDs.includes(row.tangis_region_id);
+      if (!regionIsAllowed) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   const facilityMap = new Map<
     string,
