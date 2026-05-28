@@ -2,8 +2,11 @@ import { SvelteKitAuth } from "@auth/sveltekit";
 import Google from "@auth/sveltekit/providers/google";
 import { AUTH_SECRET } from "$env/static/private";
 import { isEmailWhitelisted } from "$lib/server/pmp";
+import { sequence } from "@sveltejs/kit/hooks";
+import { redirect } from "@sveltejs/kit";
+import type { Handle } from "@sveltejs/kit";
 
-export const { handle } = SvelteKitAuth({
+const { handle: authHandle } = SvelteKitAuth({
   providers: [Google],
   basePath: "/auth",
   trustHost: true,
@@ -39,3 +42,27 @@ export const { handle } = SvelteKitAuth({
     },
   },
 });
+
+const whitelistGuard: Handle = async ({ event, resolve }) => {
+  if (
+    event.url.pathname.startsWith("/auth") ||
+    event.url.pathname === "/login"
+  ) {
+    return resolve(event);
+  }
+
+  const session = await event.locals.auth();
+  if (session?.user?.email) {
+    const isAllowed = await isEmailWhitelisted(session.user.email);
+    if (!isAllowed) {
+      console.log(
+        `[PMP] Session revoked for ${session.user.email} - not in whitelist`,
+      );
+      throw redirect(302, "/login");
+    }
+  }
+
+  return resolve(event);
+};
+
+export const handle = sequence(authHandle, whitelistGuard);

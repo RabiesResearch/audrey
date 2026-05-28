@@ -170,6 +170,10 @@ class PMPClient {
 // Singleton instance
 let pmpClient: PMPClient | null = null;
 
+// Short-lived cache so per-request checks don't hammer PMP
+let whitelistCache: { emails: string[]; expiresAt: number } | null = null;
+const WHITELIST_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+
 export function getPMPClient(): PMPClient {
   if (!pmpClient) {
     pmpClient = new PMPClient();
@@ -180,9 +184,17 @@ export function getPMPClient(): PMPClient {
 export async function isEmailWhitelisted(email: string): Promise<boolean> {
   try {
     const client = getPMPClient();
-    const whitelist = await client.getWhitelist();
+
+    if (!whitelistCache || Date.now() >= whitelistCache.expiresAt) {
+      const raw = await client.getWhitelist();
+      whitelistCache = {
+        emails: raw.map((e) => e.toLowerCase().trim()),
+        expiresAt: Date.now() + WHITELIST_CACHE_TTL_MS,
+      };
+    }
+
     const normalizedEmail = email.toLowerCase().trim();
-    const isWhitelisted = whitelist.includes(normalizedEmail);
+    const isWhitelisted = whitelistCache.emails.includes(normalizedEmail);
 
     console.log(
       `[PMP] Whitelist check for ${normalizedEmail}: ${isWhitelisted ? "ALLOWED" : "DENIED"}`,
