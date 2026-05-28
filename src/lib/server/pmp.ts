@@ -195,10 +195,6 @@ export async function isEmailWhitelisted(email: string): Promise<boolean> {
 
     const normalizedEmail = email.toLowerCase().trim();
     const isWhitelisted = whitelistCache.emails.includes(normalizedEmail);
-
-    console.log(
-      `[PMP] Whitelist check for ${normalizedEmail}: ${isWhitelisted ? "ALLOWED" : "DENIED"}`,
-    );
     return isWhitelisted;
   } catch (error) {
     console.error("[PMP] Error checking email whitelist:", error);

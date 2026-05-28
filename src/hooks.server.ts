@@ -3,7 +3,7 @@ import Google from "@auth/sveltekit/providers/google";
 import { AUTH_SECRET } from "$env/static/private";
 import { isEmailWhitelisted } from "$lib/server/pmp";
 import { sequence } from "@sveltejs/kit/hooks";
-import { redirect } from "@sveltejs/kit";
+import { error } from "@sveltejs/kit";
 import type { Handle } from "@sveltejs/kit";
 
 const { handle: authHandle } = SvelteKitAuth({
@@ -24,12 +24,8 @@ const { handle: authHandle } = SvelteKitAuth({
         try {
           const isAllowed = await isEmailWhitelisted(user.email);
           if (!isAllowed) {
-            console.log(
-              `Access denied for email: ${user.email} - not in whitelist`,
-            );
             return false;
           }
-          console.log(`Access granted for email: ${user.email}`);
         } catch (error) {
           console.error(
             `Error during whitelist check for ${user.email}:`,
@@ -55,10 +51,7 @@ const whitelistGuard: Handle = async ({ event, resolve }) => {
   if (session?.user?.email) {
     const isAllowed = await isEmailWhitelisted(session.user.email);
     if (!isAllowed) {
-      console.log(
-        `[PMP] Session revoked for ${session.user.email} - not in whitelist`,
-      );
-      throw redirect(302, "/login");
+      throw error(403, "Access denied");
     }
   }
 
