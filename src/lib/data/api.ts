@@ -392,6 +392,12 @@ export async function getCompletenessData(
     }
   }
 
+  // Precompute a Set for O(1) lookups inside the per-row filter below
+  // (vs O(rows × allowedRegionIDs) with Array.includes).
+  // null → unrestricted; empty Set → no regions allowed.
+  const allowedRegionSet =
+    allowedRegionIDs !== null ? new Set(allowedRegionIDs) : null;
+
   // Keep only rows that match every active filter. Each condition is on its
   // own line so it's obvious which filter is doing what.
   const filteredRows = rows.filter((row: MonthlyDataRow) => {
@@ -404,12 +410,11 @@ export async function getCompletenessData(
       return false;
     }
     // PMP region filter.
-    // null means unrestricted. An empty array means no regions are allowed.
-    if (allowedRegionIDs !== null) {
-      const regionIsAllowed = allowedRegionIDs.includes(row.tangis_region_id);
-      if (!regionIsAllowed) {
-        return false;
-      }
+    if (
+      allowedRegionSet !== null &&
+      !allowedRegionSet.has(row.tangis_region_id)
+    ) {
+      return false;
     }
 
     return true;

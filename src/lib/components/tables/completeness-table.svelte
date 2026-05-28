@@ -48,11 +48,34 @@
       return;
     }
 
-    const json = (await response.json()) as UserRegionsResponse;
+    // Parse the JSON body in its own try block: response.json() can throw on
+    // malformed payloads. Failing here must also fail-closed so the component
+    // does not get stuck in a perpetual loading state.
+    let json: UserRegionsResponse;
+    try {
+      json = (await response.json()) as UserRegionsResponse;
+    } catch (err) {
+      console.error(
+        "[completeness] /api/user-regions response parse error:",
+        err,
+      );
+      allowedRegionIDs = [];
+      return;
+    }
 
     if (json.isAllRegions) {
       // Admin / unrestricted user → no whitelist filtering.
       allowedRegionIDs = null;
+      return;
+    }
+
+    // Defensive shape check: if the payload is missing the regions array,
+    // fail-closed rather than letting .map() throw a TypeError.
+    if (!Array.isArray(json.regions)) {
+      console.error(
+        "[completeness] /api/user-regions response missing regions[]",
+      );
+      allowedRegionIDs = [];
       return;
     }
 
