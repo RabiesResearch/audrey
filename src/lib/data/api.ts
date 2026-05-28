@@ -96,14 +96,21 @@ export async function getFacilityInfoById(
 export async function getFacilitiesByRegionDistrict(
   regionID: string | null,
   districtID: string | null,
+  allowedRegionIDs: string[] | null = null,
 ) {
   const rows = await fetchMonthlyData();
   // Filter for region and (optionally) district using IDs
-  const facilities = rows.filter(
-    (row: MonthlyDataRow) =>
-      (regionID == null || row.tangis_region_id === regionID) &&
-      (districtID == null || row.tangis_district_council_id === districtID),
-  );
+  const facilities = rows.filter((row: MonthlyDataRow) => {
+    if (regionID !== null && row.tangis_region_id !== regionID) return false;
+    if (districtID !== null && row.tangis_district_council_id !== districtID)
+      return false;
+    if (
+      allowedRegionIDs !== null &&
+      !allowedRegionIDs.includes(row.tangis_region_id)
+    )
+      return false;
+    return true;
+  });
   // Get unique tangis_facility_id only
   const uniqueIds = Array.from(
     new Set(facilities.map((row: MonthlyDataRow) => row.tangis_facility_id)),
