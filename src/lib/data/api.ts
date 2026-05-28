@@ -400,10 +400,7 @@ export async function getCompletenessData(
       return false;
     }
     // District filter (when a specific district is selected in the UI).
-    if (
-      districtID !== null &&
-      row.tangis_district_council_id !== districtID
-    ) {
+    if (districtID !== null && row.tangis_district_council_id !== districtID) {
       return false;
     }
     // PMP region filter.
