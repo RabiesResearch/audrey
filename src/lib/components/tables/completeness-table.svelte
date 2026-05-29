@@ -1,6 +1,10 @@
 <script lang="ts">
   import { getCompletenessData, type CompletenessData } from "$lib/data/api";
   import { selectedDistrictID, selectedRegionID } from "$lib/stores/uiStore";
+  import {
+    allowedRegionIDs,
+    loadAllowedRegions,
+  } from "$lib/stores/userRegions";
   import { onMount, onDestroy } from "svelte";
   import { ChevronDown, ChevronRight } from "@steeze-ui/heroicons";
   import { Icon } from "@steeze-ui/svelte-icon";
@@ -10,78 +14,6 @@
   let isLoading = true;
   let error: string | null = null;
   let expandedItems = new Set<string>();
-
-  // -------------------------------------------------------------------------
-  // Region whitelist (loaded once on mount from /api/user-regions).
-  //
-  //   - `null`            → no restriction (admin / unrestricted user).
-  //   - empty array `[]`  → user is whitelisted to ZERO regions.
-  //   - non-empty array   → only those region IDs are visible in the table.
-  //
-  // We pass this value into getCompletenessData() so the same data shaping
-  // function can be reused unchanged for both restricted and admin users.
-  // -------------------------------------------------------------------------
-  let allowedRegionIDs: string[] | null = [];
-
-  // Shape of the JSON returned by /api/user-regions.
-  type UserRegionsResponse = {
-    regions: { regionID: string; regionName: string }[];
-    isAllRegions: boolean;
-  };
-
-  async function loadAllowedRegions() {
-    let response: Response;
-    try {
-      response = await fetch("/api/user-regions");
-    } catch (err) {
-      console.error("[completeness] network error fetching user-regions:", err);
-      allowedRegionIDs = [];
-      return;
-    }
-
-    if (!response.ok) {
-      console.error(
-        "[completeness] /api/user-regions returned HTTP",
-        response.status,
-      );
-      allowedRegionIDs = [];
-      return;
-    }
-
-    // Parse the JSON body in its own try block: response.json() can throw on
-    // malformed payloads. Failing here must also fail-closed so the component
-    // does not get stuck in a perpetual loading state.
-    let json: UserRegionsResponse;
-    try {
-      json = (await response.json()) as UserRegionsResponse;
-    } catch (err) {
-      console.error(
-        "[completeness] /api/user-regions response parse error:",
-        err,
-      );
-      allowedRegionIDs = [];
-      return;
-    }
-
-    if (json.isAllRegions) {
-      // Admin / unrestricted user → no whitelist filtering.
-      allowedRegionIDs = null;
-      return;
-    }
-
-    // Defensive shape check: if the payload is missing the regions array,
-    // fail-closed rather than letting .map() throw a TypeError.
-    if (!Array.isArray(json.regions)) {
-      console.error(
-        "[completeness] /api/user-regions response missing regions[]",
-      );
-      allowedRegionIDs = [];
-      return;
-    }
-
-    // Build a plain array of region IDs from the response.
-    allowedRegionIDs = json.regions.map((r) => r.regionID);
-  }
 
   // Get last 12 months for column headers
   let monthColumns: { display: string; key: string }[] = [];
@@ -196,7 +128,7 @@
       data = await getCompletenessData(
         $selectedRegionID,
         $selectedDistrictID,
-        allowedRegionIDs,
+        $allowedRegionIDs,
       );
     } catch (err) {
       console.error("Error loading completeness data:", err);

@@ -5,6 +5,10 @@
     type FacilityInfo,
   } from "$lib/data/api";
   import { selectedRegionID, selectedDistrictID } from "$lib/stores/uiStore";
+  import {
+    allowedRegionIDs,
+    loadAllowedRegions,
+  } from "$lib/stores/userRegions";
   import { onMount } from "svelte";
   import {
     createColumnHelper,
@@ -115,30 +119,6 @@
     return result;
   }
 
-  // The user's PMP-allowed region IDs. Starts as [] (show nothing) until loaded.
-  // null means no restriction (admin). [] means restricted to zero regions.
-  let allowedRegionIDs: string[] | null = [];
-
-  async function loadAllowedRegions() {
-    try {
-      const response = await fetch("/api/user-regions");
-      if (!response.ok) {
-        allowedRegionIDs = [];
-        return;
-      }
-      const json = await response.json();
-      if (json.isAllRegions) {
-        allowedRegionIDs = null;
-      } else {
-        allowedRegionIDs = Array.isArray(json.regions)
-          ? json.regions.map((r: { regionID: string }) => r.regionID)
-          : [];
-      }
-    } catch {
-      allowedRegionIDs = [];
-    }
-  }
-
   onMount(async () => {
     await loadAllowedRegions();
   });
@@ -181,7 +161,7 @@
     const facilities = await getFacilitiesByRegionDistrict(
       $selectedRegionID,
       null,
-      allowedRegionIDs,
+      $allowedRegionIDs,
     );
     const dataWithNulls: Array<FacilityInfo | null> = [];
     for (const id of facilities) {
