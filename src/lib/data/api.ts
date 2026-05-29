@@ -99,14 +99,18 @@ export async function getFacilitiesByRegionDistrict(
   allowedRegionIDs: string[] | null = null,
 ) {
   const rows = await fetchMonthlyData();
+  // Precompute a Set for O(1) whitelist lookups (consistent with
+  // getCompletenessData). null → unrestricted; empty Set → no regions allowed.
+  const allowedRegionSet =
+    allowedRegionIDs !== null ? new Set(allowedRegionIDs) : null;
   // Filter for region and (optionally) district using IDs
   const facilities = rows.filter((row: MonthlyDataRow) => {
     if (regionID !== null && row.tangis_region_id !== regionID) return false;
     if (districtID !== null && row.tangis_district_council_id !== districtID)
       return false;
     if (
-      allowedRegionIDs !== null &&
-      !allowedRegionIDs.includes(row.tangis_region_id)
+      allowedRegionSet !== null &&
+      !allowedRegionSet.has(row.tangis_region_id)
     )
       return false;
     return true;

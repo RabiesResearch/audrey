@@ -156,7 +156,15 @@
 
   let expandedState: ExpandedState = {};
 
+  // Guards against out-of-order async runs. This reactive block re-runs on
+  // every dependency change (selected region/district, allowed regions) and
+  // each run awaits network calls. Each run takes the next sequence number;
+  // only the latest run is allowed to commit its result, so a slow earlier
+  // run can't overwrite data computed for a newer selection.
+  let loadSeq = 0;
+
   $: (async () => {
+    const seq = ++loadSeq;
     // Always fetch all facilities for the selected region (not just the district)
     const facilities = await getFacilitiesByRegionDistrict(
       $selectedRegionID,
@@ -167,6 +175,9 @@
     for (const id of facilities) {
       dataWithNulls.push(await getFacilityInfoById(id));
     }
+    // No awaits beyond this point: bail if a newer run started while we were
+    // awaiting, so the rest (data + expandedState) commits atomically.
+    if (seq !== loadSeq) return;
     let collapsed = collapseFacilityInfo(
       dataWithNulls.filter((facility) => facility !== null),
     );

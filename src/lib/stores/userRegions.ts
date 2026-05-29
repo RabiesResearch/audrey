@@ -22,7 +22,15 @@ let loadPromise: Promise<void> | null = null;
 // multiple components — only the first call hits the network; every caller
 // awaits the same fetch and therefore sees the resolved value.
 export function loadAllowedRegions(): Promise<void> {
-  if (!loadPromise) loadPromise = doLoadAllowedRegions();
+  if (!loadPromise) {
+    // Clear the cached promise once it settles. Concurrent callers still share
+    // the single in-flight fetch, but a later mount (or a retry after a
+    // transient PMP failure) can fetch again instead of being stuck forever at
+    // the fail-closed default.
+    loadPromise = doLoadAllowedRegions().finally(() => {
+      loadPromise = null;
+    });
+  }
   return loadPromise;
 }
 
