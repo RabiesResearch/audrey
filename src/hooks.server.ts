@@ -51,7 +51,10 @@ const whitelistGuard: Handle = async ({ event, resolve }) => {
   if (session?.user?.email) {
     const isAllowed = await isEmailWhitelisted(session.user.email);
     if (!isAllowed) {
-      throw error(403, "Access denied");
+      throw error(
+        403,
+        "Your account is not authorised to access this dashboard. Please contact your administrator to request access.",
+      );
     }
   }
 
