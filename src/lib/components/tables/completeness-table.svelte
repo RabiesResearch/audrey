@@ -1,6 +1,10 @@
 <script lang="ts">
   import { getCompletenessData, type CompletenessData } from "$lib/data/api";
   import { selectedDistrictID, selectedRegionID } from "$lib/stores/uiStore";
+  import {
+    allowedRegionIDs,
+    loadAllowedRegions,
+  } from "$lib/stores/userRegions";
   import { onMount, onDestroy } from "svelte";
   import { ChevronDown, ChevronRight } from "@steeze-ui/heroicons";
   import { Icon } from "@steeze-ui/svelte-icon";
@@ -120,8 +124,12 @@
       isLoading = true;
       error = null;
 
-      // Fetch completeness data
-      data = await getCompletenessData($selectedRegionID, $selectedDistrictID);
+      // Fetch completeness data, restricted to the user's allowed regions.
+      data = await getCompletenessData(
+        $selectedRegionID,
+        $selectedDistrictID,
+        $allowedRegionIDs,
+      );
     } catch (err) {
       console.error("Error loading completeness data:", err);
       error = err instanceof Error ? err.message : "Unknown error";
@@ -133,11 +141,17 @@
   let unsubscribeRegion: (() => void) | undefined;
   let unsubscribeDistrict: (() => void) | undefined;
 
-  onMount(() => {
+  onMount(async () => {
     generateMonthColumns();
+
+    // Load the user's allowed regions FIRST so the very first call to
+    // loadCompletenessData already has the correct whitelist.
+    await loadAllowedRegions();
+
     loadCompletenessData();
 
-    // Subscribe to store changes
+    // Subscribe to store changes so the table refreshes when the user picks
+    // a different region/district in the header search.
     unsubscribeRegion = selectedRegionID.subscribe(() => {
       loadCompletenessData();
     });
