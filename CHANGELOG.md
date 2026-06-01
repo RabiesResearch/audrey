@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/RabiesResearch/audrey/compare/v1.3.0...v1.3.1) (2026-06-01)
+
+
+### Bug Fixes
+
+* filter completeness and detailed-data tables by user's allowed regions ([#97](https://github.com/RabiesResearch/audrey/issues/97)) ([2d56e0a](https://github.com/RabiesResearch/audrey/commit/2d56e0a2bc05702a8168b5ee0470dfd3e770fac0))
+
 # [1.3.0](https://github.com/RabiesResearch/audrey/compare/v1.2.0...v1.3.0) (2025-11-03)
 
 
