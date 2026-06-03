@@ -96,14 +96,25 @@ export async function getFacilityInfoById(
 export async function getFacilitiesByRegionDistrict(
   regionID: string | null,
   districtID: string | null,
+  allowedRegionIDs: string[] | null = null,
 ) {
   const rows = await fetchMonthlyData();
+  // Precompute a Set for O(1) whitelist lookups (consistent with
+  // getCompletenessData). null → unrestricted; empty Set → no regions allowed.
+  const allowedRegionSet =
+    allowedRegionIDs !== null ? new Set(allowedRegionIDs) : null;
   // Filter for region and (optionally) district using IDs
-  const facilities = rows.filter(
-    (row: MonthlyDataRow) =>
-      (regionID == null || row.tangis_region_id === regionID) &&
-      (districtID == null || row.tangis_district_council_id === districtID),
-  );
+  const facilities = rows.filter((row: MonthlyDataRow) => {
+    if (regionID !== null && row.tangis_region_id !== regionID) return false;
+    if (districtID !== null && row.tangis_district_council_id !== districtID)
+      return false;
+    if (
+      allowedRegionSet !== null &&
+      !allowedRegionSet.has(row.tangis_region_id)
+    )
+      return false;
+    return true;
+  });
   // Get unique tangis_facility_id only
   const uniqueIds = Array.from(
     new Set(facilities.map((row: MonthlyDataRow) => row.tangis_facility_id)),
@@ -361,6 +372,11 @@ export async function getAllRegionsAndDistricts(
 export async function getCompletenessData(
   regionID: string | null = null,
   districtID: string | null = null,
+  // The user's PMP-allowed region IDs.
+  //   - `null`          → no restriction (admin / unrestricted user).
+  //   - empty array     → the user can see no regions.
+  //   - non-empty array → the user can see only those regions.
+  allowedRegionIDs: string[] | null = null,
 ): Promise<CompletenessData[]> {
   const rows = await fetchMonthlyData();
 
@@ -387,12 +403,33 @@ export async function getCompletenessData(
     }
   }
 
-  // Get all unique facilities that match the filter criteria
-  const filteredRows = rows.filter(
-    (row: MonthlyDataRow) =>
-      (regionID == null || row.tangis_region_id === regionID) &&
-      (districtID == null || row.tangis_district_council_id === districtID),
-  );
+  // Precompute a Set for O(1) lookups inside the per-row filter below
+  // (vs O(rows × allowedRegionIDs) with Array.includes).
+  // null → unrestricted; empty Set → no regions allowed.
+  const allowedRegionSet =
+    allowedRegionIDs !== null ? new Set(allowedRegionIDs) : null;
+
+  // Keep only rows that match every active filter. Each condition is on its
+  // own line so it's obvious which filter is doing what.
+  const filteredRows = rows.filter((row: MonthlyDataRow) => {
+    // Region filter (when a specific region is selected in the UI).
+    if (regionID !== null && row.tangis_region_id !== regionID) {
+      return false;
+    }
+    // District filter (when a specific district is selected in the UI).
+    if (districtID !== null && row.tangis_district_council_id !== districtID) {
+      return false;
+    }
+    // PMP region filter.
+    if (
+      allowedRegionSet !== null &&
+      !allowedRegionSet.has(row.tangis_region_id)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
 
   const facilityMap = new Map<
     string,
