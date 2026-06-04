@@ -9,7 +9,7 @@
 
 <div id="map" class="page mx-5 flex flex-col lg:mx-10" style="height: 85vh;">
   <div
-    class="mb-8 grid min-h-0 flex-1 grid-cols-1 gap-6 2xl:grid-cols-2"
+    class="mb-8 grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-2"
     style="height: 100%;"
   >
     <!-- Map visualization -->
