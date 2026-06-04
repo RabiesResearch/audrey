@@ -2,8 +2,10 @@ import { SvelteKitAuth } from "@auth/sveltekit";
 import Google from "@auth/sveltekit/providers/google";
 import { AUTH_SECRET } from "$env/static/private";
 import { isEmailWhitelisted } from "$lib/server/pmp";
+import { sequence } from "@sveltejs/kit/hooks";
+import { whitelistGuard } from "$lib/server/whitelist-guard";
 
-export const { handle } = SvelteKitAuth({
+const { handle: authHandle } = SvelteKitAuth({
   providers: [Google],
   basePath: "/auth",
   trustHost: true,
@@ -21,12 +23,8 @@ export const { handle } = SvelteKitAuth({
         try {
           const isAllowed = await isEmailWhitelisted(user.email);
           if (!isAllowed) {
-            console.log(
-              `Access denied for email: ${user.email} - not in whitelist`,
-            );
             return false;
           }
-          console.log(`Access granted for email: ${user.email}`);
         } catch (error) {
           console.error(
             `Error during whitelist check for ${user.email}:`,
@@ -39,3 +37,5 @@ export const { handle } = SvelteKitAuth({
     },
   },
 });
+
+export const handle = sequence(authHandle, whitelistGuard);
