@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/RabiesResearch/audrey/compare/v1.3.1...v1.3.2) (2026-06-04)
+
+
+### Bug Fixes
+
+* enforce PMP whitelist on every request (per-request guard) ([#98](https://github.com/RabiesResearch/audrey/issues/98)) ([fefae7f](https://github.com/RabiesResearch/audrey/commit/fefae7f28bcbcd42851e8b031eb3663e423d02be))
+
 ## [1.3.1](https://github.com/RabiesResearch/audrey/compare/v1.3.0...v1.3.1) (2026-06-01)
 
 
