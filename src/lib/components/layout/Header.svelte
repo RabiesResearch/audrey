@@ -113,9 +113,9 @@
       showDropdown = filteredResults.length > 0;
       searchTerm = input;
     } else {
-      showDropdown = false;
       filteredResults = [];
-      searchTerm = "";
+      // Emptying the field via keyboard must reset the selection like (x)
+      clearLocation();
     }
   }
 
