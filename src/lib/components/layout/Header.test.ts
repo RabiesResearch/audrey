@@ -58,9 +58,8 @@ describe("Header search — clearing resets the selected location", () => {
   });
 
   const getSearchInput = (): HTMLInputElement => {
-    const input = document.querySelector<HTMLInputElement>(
-      "input[type='text']",
-    );
+    const input =
+      document.querySelector<HTMLInputElement>("input[type='text']");
     if (!input) throw new Error("search input not found");
     return input;
   };
