@@ -16,7 +16,7 @@ import {
 // like the (x) button does. Previously only the dropdown state was cleared,
 // so the results stayed filtered on the deleted selection.
 describe("Header search — clearing resets the selected location", () => {
-  let component: ReturnType<typeof mount>;
+  let component: ReturnType<typeof mount> | undefined;
 
   const selectDodomaChamwino = () => {
     selectedRegionID.set("r1");
@@ -48,7 +48,10 @@ describe("Header search — clearing resets the selected location", () => {
   });
 
   afterEach(() => {
-    unmount(component);
+    // Guarded: if mount() threw, component was never assigned and a bare
+    // unmount() here would bury the original failure under a cleanup error.
+    if (component) unmount(component);
+    component = undefined;
     document.body.innerHTML = "";
     allRegionsAndDistricts.set([]);
     selectedRegionID.set(null);

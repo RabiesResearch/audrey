@@ -51,7 +51,7 @@ const FIXTURE_ROWS = [
 const tableText = () => document.body.textContent ?? "";
 
 describe("completeness table — auto-expand for the searched district", () => {
-  let component: ReturnType<typeof mount>;
+  let component: ReturnType<typeof mount> | undefined;
 
   beforeEach(() => {
     // Fresh cache entry so fetchMonthlyData serves the fixture without HTTP.
@@ -68,7 +68,10 @@ describe("completeness table — auto-expand for the searched district", () => {
   });
 
   afterEach(() => {
-    unmount(component);
+    // Guarded: if mount() threw, component was never assigned and a bare
+    // unmount() here would bury the original failure under a cleanup error.
+    if (component) unmount(component);
+    component = undefined;
     document.body.innerHTML = "";
     vi.unstubAllGlobals();
     monthlyDataCache.set(null);
