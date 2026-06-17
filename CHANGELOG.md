@@ -1,3 +1,10 @@
+## [1.3.4](https://github.com/RabiesResearch/audrey/compare/v1.3.3...v1.3.4) (2026-06-17)
+
+
+### Bug Fixes
+
+* search clearing resets results + completeness table auto-expand ([#100](https://github.com/RabiesResearch/audrey/issues/100)) ([71582e0](https://github.com/RabiesResearch/audrey/commit/71582e0184c16a9f28699d8d624488db7d8a350c)), closes [#259](https://github.com/RabiesResearch/audrey/issues/259)
+
 ## [1.3.3](https://github.com/RabiesResearch/audrey/compare/v1.3.2...v1.3.3) (2026-06-04)
 
 
