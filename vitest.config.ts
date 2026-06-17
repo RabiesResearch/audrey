@@ -1,7 +1,9 @@
 import { defineConfig } from "vitest/config";
+import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { fileURLToPath } from "node:url";
 
-// Minimal Vitest setup. Server-side unit tests run in the node environment.
+// Minimal Vitest setup. Server-side unit tests run in the node environment;
+// component tests opt into jsdom per file via `// @vitest-environment jsdom`.
 // Aliases mirror svelte.config.js (+ the SvelteKit `$env/static/private`
 // virtual module) so source modules can be imported under test without the
 // full SvelteKit/Vite plugin machinery:
@@ -10,7 +12,12 @@ import { fileURLToPath } from "node:url";
 const r = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 export default defineConfig({
+  // Compiles .svelte files so component tests can mount() them.
+  plugins: [svelte()],
   resolve: {
+    // mount() needs Svelte's client build, which only the browser export
+    // condition provides (https://svelte.dev/docs/svelte/testing).
+    conditions: ["browser"],
     alias: {
       $lib: r("./src/lib"),
       $data: r("./src/lib/data"),

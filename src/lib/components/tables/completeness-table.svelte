@@ -130,6 +130,23 @@
         $selectedDistrictID,
         $allowedRegionIDs,
       );
+
+      // The selection drives which rows exist, so stale manual expansions
+      // are dropped on every reload. When a district is picked in the
+      // header search, expand its region row so the district is visible
+      // without an extra click; clearing the search collapses everything.
+      const expanded = new Set<string>();
+      if ($selectedDistrictID) {
+        const region = data.find((item) =>
+          item.children?.some(
+            (child) => child.districtID === $selectedDistrictID,
+          ),
+        );
+        if (region) {
+          expanded.add(getItemKey(region));
+        }
+      }
+      expandedItems = expanded;
     } catch (err) {
       console.error("Error loading completeness data:", err);
       error = err instanceof Error ? err.message : "Unknown error";
