@@ -18,6 +18,14 @@ interface PMPUserRegions {
   name: string;
 }
 
+interface PMPHealthFacility {
+  // id == tan-gis facility_id == Audrey's monthly_tz.tangis_facility_id.
+  id: string;
+  region_id: string;
+  // Tri-state: true = has stock, null = unknown (default), false = unused.
+  has_vaccine_stock: boolean | null;
+}
+
 class PMPClient {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
@@ -165,6 +173,43 @@ class PMPClient {
       throw error;
     }
   }
+
+  async getHealthFacilities(
+    fetchFn?: typeof fetch,
+  ): Promise<PMPHealthFacility[]> {
+    if (!this.accessToken) {
+      await this.authenticate();
+    }
+
+    try {
+      const _fetch = fetchFn || fetch;
+      const response = await _fetch(
+        `${this.baseUrl}/rabies_data_api/v1/health_facilities`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+          },
+        },
+      );
+
+      if (response.status === 401) {
+        // Token might be expired, try to refresh
+        await this.refreshAccessToken();
+        return this.getHealthFacilities(fetchFn);
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch health facilities: ${response.status}`,
+        );
+      }
+
+      return (await response.json()) as PMPHealthFacility[];
+    } catch (error) {
+      console.error("[PMP] Failed to fetch health facilities from PMP:", error);
+      throw error;
+    }
+  }
 }
 
 // Singleton instance
@@ -209,6 +254,36 @@ export async function isEmailWhitelisted(email: string): Promise<boolean> {
 
     // In production, deny access for security
     return false;
+  }
+}
+
+// tangis_facility_id → has_vaccine_stock, scoped to allowedRegionIDs (null =
+// all, [] = none, list = those). null on PMP failure (fail open); map otherwise.
+export async function getVaccineStockByFacility(
+  fetchFn?: typeof fetch,
+  allowedRegionIDs: string[] | null = null,
+): Promise<Record<string, boolean | null> | null> {
+  try {
+    const client = getPMPClient();
+    const facilities = await client.getHealthFacilities(fetchFn);
+
+    const allowedRegionSet =
+      allowedRegionIDs !== null ? new Set(allowedRegionIDs) : null;
+
+    const stockById: Record<string, boolean | null> = {};
+    for (const facility of facilities) {
+      if (
+        allowedRegionSet !== null &&
+        !allowedRegionSet.has(facility.region_id)
+      ) {
+        continue;
+      }
+      stockById[facility.id] = facility.has_vaccine_stock ?? null;
+    }
+    return stockById;
+  } catch (error) {
+    console.error("[PMP] Error fetching vaccine stock map:", error);
+    return null; // unavailable (≠ empty scope) → callers fail open
   }
 }
 

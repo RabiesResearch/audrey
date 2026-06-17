@@ -15,6 +15,9 @@
   let error: string | null = null;
   let expandedItems = new Set<string>();
 
+  // Default ON: show only facilities PMP marks as holding vaccine stock.
+  let onlyWithVaccineStock = true;
+
   // Get last 12 months for column headers
   let monthColumns: { display: string; key: string }[] = [];
 
@@ -129,6 +132,7 @@
         $selectedRegionID,
         $selectedDistrictID,
         $allowedRegionIDs,
+        onlyWithVaccineStock,
       );
 
       // The selection drives which rows exist, so stale manual expansions
@@ -185,7 +189,19 @@
 </script>
 
 <div class="p-4">
-  <h2 class="mb-4 text-xl font-bold">Data Completeness</h2>
+  <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h2 class="text-xl font-bold">Data Completeness</h2>
+
+    <label class="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+      <input
+        type="checkbox"
+        class="h-4 w-4 rounded border-gray-300"
+        bind:checked={onlyWithVaccineStock}
+        on:change={loadCompletenessData}
+      />
+      Only show facilities with vaccine stock
+    </label>
+  </div>
 
   {#if isLoading}
     <div class="flex justify-center p-8">
@@ -428,6 +444,13 @@
       </div>
     </div>
   {:else}
-    <div class="p-4 text-center text-gray-500">No completeness data found.</div>
+    <div class="p-4 text-center text-gray-500">
+      {#if onlyWithVaccineStock}
+        No facilities with vaccine stock found. Facilities are flagged in the
+        PMP portal, or untick the filter above to show all facilities.
+      {:else}
+        No completeness data found.
+      {/if}
+    </div>
   {/if}
 </div>

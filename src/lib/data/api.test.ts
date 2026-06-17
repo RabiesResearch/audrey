@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock the data layer so we control the rows without hitting /api/monthly-tz.
+// Mock the data layer so we control the rows without hitting /api/monthly-tz
+// or /api/health-facilities.
 vi.mock("$data/liveDB", () => ({
   fetchMonthlyData: vi.fn(),
+  fetchVaccineStock: vi.fn(),
 }));
 
 import { getCompletenessData, getFacilitiesByRegionDistrict } from "./api";
-import { fetchMonthlyData } from "$data/liveDB";
+import { fetchMonthlyData, fetchVaccineStock } from "$data/liveDB";
 
 const rows = vi.mocked(fetchMonthlyData);
+const stock = vi.mocked(fetchVaccineStock);
 
 // Two regions, one facility each.
 const ROWS = [
@@ -44,6 +47,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rows.mockResolvedValue(ROWS as any);
+  // Default: stock service unavailable (filter-off tests never read this).
+  stock.mockResolvedValue(null);
 });
 
 // Regression: the detailed-data table previously showed every region. It must
@@ -84,5 +89,35 @@ describe("getCompletenessData — region whitelist", () => {
   it("includes nothing when the allowed list is empty", async () => {
     const data = await getCompletenessData(null, null, []);
     expect(data).toEqual([]);
+  });
+});
+
+describe("getCompletenessData — vaccine-stock filter", () => {
+  const regionNames = (data: { regionName: string | null }[]) =>
+    data.map((d) => d.regionName).sort();
+
+  it("keeps only facilities marked true; null/false/absent are excluded", async () => {
+    // f-mt has stock (true); f-mr is unknown (null).
+    stock.mockResolvedValue({ "f-mt": true, "f-mr": null });
+    const data = await getCompletenessData(null, null, null, true);
+    expect(regionNames(data)).toEqual(["Mtwara"]);
+  });
+
+  it("does not fetch the stock map when the filter is off", async () => {
+    const data = await getCompletenessData(null, null, null, false);
+    expect(stock).not.toHaveBeenCalled();
+    expect(regionNames(data)).toEqual(["Morogoro", "Mtwara"]);
+  });
+
+  it("fails open (shows all) when the stock service is unavailable (null)", async () => {
+    stock.mockResolvedValue(null);
+    const data = await getCompletenessData(null, null, null, true);
+    expect(regionNames(data)).toEqual(["Morogoro", "Mtwara"]);
+  });
+
+  it("shows nothing when the loaded map is empty (not a fail-open)", async () => {
+    stock.mockResolvedValue({});
+    const data = await getCompletenessData(null, null, null, true);
+    expect(regionNames(data)).toEqual([]);
   });
 });
