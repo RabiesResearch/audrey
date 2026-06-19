@@ -121,3 +121,62 @@ describe("getCompletenessData — vaccine-stock filter", () => {
     expect(regionNames(data)).toEqual([]);
   });
 });
+
+// Accuracy: the completeness % must recompute over the FILTERED set, so the
+// same region can read differently with the toggle on vs off.
+describe("getCompletenessData — completeness recalculates with the filter", () => {
+  // One district, two facilities:
+  //  - f-stock:   has stock, REPORTED this month
+  //  - f-nostock: no stock,  did NOT report this month (only an old report)
+  const now = new Date();
+  const curMonth = `(${now.getMonth() + 1}/${now.getFullYear()})`;
+  const curKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const TWO_FAC = [
+    {
+      tangis_facility_id: "f-stock",
+      region_name: "Reg",
+      tangis_region_id: "R",
+      district_council_name: "Dist",
+      tangis_district_council_id: "D",
+      facility_name: "Stocked HC",
+      tally_total_patients: "1",
+      tally_total_vials: "1",
+      submission_date: "",
+      report_full_date: "",
+      tally_report_month: `Now ${curMonth}`,
+    },
+    {
+      tangis_facility_id: "f-nostock",
+      region_name: "Reg",
+      tangis_region_id: "R",
+      district_council_name: "Dist",
+      tangis_district_council_id: "D",
+      facility_name: "Unstocked HC",
+      tally_total_patients: "1",
+      tally_total_vials: "1",
+      submission_date: "",
+      report_full_date: "",
+      tally_report_month: "Old (1/2000)",
+    },
+  ];
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rows.mockResolvedValue(TWO_FAC as any);
+  });
+
+  it("off → 50% (1 of 2 facilities reported this month)", async () => {
+    const data = await getCompletenessData(null, null, null, false);
+    expect(data).toHaveLength(1);
+    expect(data[0].monthlyCompleteness[curKey]).toBe(50);
+  });
+
+  it("on → 100% (only the stocked facility counts, and it reported)", async () => {
+    stock.mockResolvedValue({ "f-stock": true, "f-nostock": null });
+    const data = await getCompletenessData(null, null, null, true);
+    expect(data).toHaveLength(1);
+    // Rolled up over the stocked facility only: 1 of 1 reported.
+    expect(data[0].monthlyCompleteness[curKey]).toBe(100);
+  });
+});
