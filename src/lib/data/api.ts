@@ -381,6 +381,11 @@ export async function getCompletenessData(
   // tangis_facility_id). Off by default; only then is PMP queried.
   onlyWithVaccineStock: boolean = false,
 ): Promise<CompletenessData[]> {
+  // No allowed regions → nothing to show; skip the data and PMP fetches.
+  if (allowedRegionIDs !== null && allowedRegionIDs.length === 0) {
+    return [];
+  }
+
   const rows = await fetchMonthlyData();
 
   // null → unavailable (fail open); a map (even empty) → filter applies.
