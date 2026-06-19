@@ -243,16 +243,7 @@ export async function isEmailWhitelisted(email: string): Promise<boolean> {
     return isWhitelisted;
   } catch (error) {
     console.error("[PMP] Error checking email whitelist:", error);
-
-    // In case of PMP unavailability, or NNetlify previews with dynamic domains
-    // We want to allow access in development but deny in production.
-    // For security, we default to denying access.
-    if (import.meta.env.DEV) {
-      console.warn("[PMP] Development mode: PMP unavailable, allowing access");
-      return true;
-    }
-
-    // In production, deny access for security
+    // PMP unavailable → deny access (fail-closed, all environments).
     return false;
   }
 }
@@ -306,17 +297,7 @@ export async function getUserAllowedRegions(
     return result;
   } catch (error) {
     console.error("[PMP] Error fetching user regions:", error);
-
-    // In development mode, return all available regions
-    if (import.meta.env.DEV) {
-      console.warn(
-        "[PMP] Development mode: PMP unavailable, returning all regions",
-      );
-      // This would need to be imported from api.ts, but for now return empty array
-      return [];
-    }
-
-    // In production, return empty array for security
+    // PMP unavailable → no regions (fail-closed).
     return [];
   }
 }
