@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/RabiesResearch/audrey/compare/v1.3.4...v1.4.0) (2026-06-24)
+
+
+### Features
+
+* vaccine-stock filter on completeness table ([#255](https://github.com/RabiesResearch/audrey/issues/255)) ([#101](https://github.com/RabiesResearch/audrey/issues/101)) ([6af9d71](https://github.com/RabiesResearch/audrey/commit/6af9d7187f173d0e020f0531414b337ec7aba630))
+
 ## [1.3.4](https://github.com/RabiesResearch/audrey/compare/v1.3.3...v1.3.4) (2026-06-17)
 
 
