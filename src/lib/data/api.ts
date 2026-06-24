@@ -1,5 +1,5 @@
 import { type MonthlyDataRow } from "$lib/stores/uiStore";
-import { fetchMonthlyData } from "$data/liveDB";
+import { fetchMonthlyData, fetchVaccineStock } from "$data/liveDB";
 // import { fetchMonthlyData as fetchMockData } from "$data/mockDB";
 
 // types
@@ -377,8 +377,21 @@ export async function getCompletenessData(
   //   - empty array     → the user can see no regions.
   //   - non-empty array → the user can see only those regions.
   allowedRegionIDs: string[] | null = null,
+  // Keep only facilities with has_vaccine_stock === true (joined by
+  // tangis_facility_id). Off by default; only then is PMP queried.
+  onlyWithVaccineStock: boolean = false,
 ): Promise<CompletenessData[]> {
+  // No allowed regions → nothing to show; skip the data and PMP fetches.
+  if (allowedRegionIDs !== null && allowedRegionIDs.length === 0) {
+    return [];
+  }
+
   const rows = await fetchMonthlyData();
+
+  // null → unavailable (fail open); a map (even empty) → filter applies.
+  const stockByFacility = onlyWithVaccineStock
+    ? await fetchVaccineStock()
+    : null;
 
   // Generate last 12 months from current date (same logic as frontend)
   const now = new Date();
@@ -424,6 +437,13 @@ export async function getCompletenessData(
     if (
       allowedRegionSet !== null &&
       !allowedRegionSet.has(row.tangis_region_id)
+    ) {
+      return false;
+    }
+    // Vaccine-stock filter (true only; skipped when map is null/unavailable).
+    if (
+      stockByFacility !== null &&
+      stockByFacility[row.tangis_facility_id] !== true
     ) {
       return false;
     }

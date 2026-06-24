@@ -43,3 +43,44 @@ export async function fetchMonthlyData(
     );
   }
 }
+
+// tangis_facility_id → has_vaccine_stock, from PMP via /api/health-facilities.
+type VaccineStockMap = Record<string, boolean | null>;
+
+let vaccineStockCache: { data: VaccineStockMap; timestamp: number } | null =
+  null;
+const VACCINE_STOCK_CACHE_DURATION = 60 * 60 * 1000; // 60 minutes
+
+// Loaded map (possibly empty) on success; null when unavailable (callers fail open).
+export async function fetchVaccineStock(
+  fetchFn?: typeof fetch,
+): Promise<VaccineStockMap | null> {
+  const now = Date.now();
+  if (
+    vaccineStockCache &&
+    now - vaccineStockCache.timestamp < VACCINE_STOCK_CACHE_DURATION
+  ) {
+    return vaccineStockCache.data;
+  }
+
+  try {
+    const _fetch = fetchFn || fetch;
+    const response = await _fetch("/api/health-facilities");
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || "Failed to fetch vaccine stock");
+    }
+
+    vaccineStockCache = { data: result.data, timestamp: now }; // cache successes only
+    return result.data;
+  } catch (error) {
+    console.error("[API] Vaccine stock request error:", error);
+    return null; // unavailable → callers fail open
+  }
+}
