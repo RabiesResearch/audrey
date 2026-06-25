@@ -1,5 +1,11 @@
 import { type MonthlyDataRow } from "$lib/stores/uiStore";
-import { fetchMonthlyData, fetchVaccineStock } from "$data/liveDB";
+import {
+  fetchMonthlyData,
+  fetchVaccineStock,
+  fetchHighRiskBites,
+  type HighRiskBitesData,
+} from "$data/liveDB";
+export type { HighRiskBitesData };
 // import { fetchMonthlyData as fetchMockData } from "$data/mockDB";
 
 // types
@@ -363,6 +369,12 @@ export async function getAllRegionsAndDistricts(
   }
   allRegionsAndDistrictsCache = result;
   return result;
+}
+
+export async function getHighRiskBites(
+  fetchFn?: typeof fetch,
+): Promise<HighRiskBitesData> {
+  return fetchHighRiskBites(fetchFn);
 }
 
 /**
