@@ -242,7 +242,10 @@
     const { width, height } = getChartDimensions();
 
     // D3 projection and path
-    const projection = d3.geoMercator().fitSize([width, height], geoJsonData);
+    const legendReservedHeight = 70;
+    const projection = d3
+      .geoMercator()
+      .fitSize([width, height - legendReservedHeight], geoJsonData);
     const path = d3.geoPath().projection(projection);
 
     // Color scale for vials - handle empty data case
