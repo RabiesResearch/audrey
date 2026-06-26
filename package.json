@@ -10,6 +10,7 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
+    "gen:ward-points": "node scripts/gen-ward-points.mjs",
     "test": "svelte-kit sync && vitest run",
     "test:watch": "svelte-kit sync && vitest"
   },
