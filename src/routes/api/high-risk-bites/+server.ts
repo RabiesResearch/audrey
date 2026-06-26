@@ -24,6 +24,13 @@ const dbConfig = {
   idleTimeoutMillis: 30000,
 };
 
+const EMPTY_HIGH_RISK_BITES_DATA = {
+  wards: [],
+  districtPoints: [],
+  regionTotals: {},
+  districtTotals: {},
+};
+
 // Seeding the jitter by ward_id collapses a ward's cases to one point, so markers
 // can't be averaged back to the ward/village.
 const JITTER_RADIUS_KM = 7;
@@ -68,12 +75,7 @@ export const GET: RequestHandler = async ({ locals, fetch }) => {
       {
         success: false,
         error: "Unauthorized",
-        data: {
-          wards: [],
-          districtPoints: [],
-          regionTotals: {},
-          districtTotals: {},
-        },
+        data: EMPTY_HIGH_RISK_BITES_DATA,
       },
       { status: 401 },
     );
@@ -90,12 +92,7 @@ export const GET: RequestHandler = async ({ locals, fetch }) => {
   if (regionFilter !== null && regionFilter.length === 0) {
     return json({
       success: true,
-      data: {
-        wards: [],
-        districtPoints: [],
-        regionTotals: {},
-        districtTotals: {},
-      },
+      data: EMPTY_HIGH_RISK_BITES_DATA,
     });
   }
 
@@ -179,12 +176,7 @@ export const GET: RequestHandler = async ({ locals, fetch }) => {
       {
         success: false,
         error: `Failed to fetch high-risk bites: ${error instanceof Error ? error.message : "Unknown error"}`,
-        data: {
-          wards: [],
-          districtPoints: [],
-          regionTotals: {},
-          districtTotals: {},
-        },
+        data: EMPTY_HIGH_RISK_BITES_DATA,
       },
       { status: 500 },
     );

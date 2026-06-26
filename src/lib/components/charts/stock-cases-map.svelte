@@ -228,6 +228,16 @@
     }
   }
 
+  function renderVaccinePatientStats(
+    areaData: RegionCasesStockData | undefined,
+  ): string {
+    if (!areaData) return `<div>No vaccine/patient data</div>`;
+    return (
+      `<div>Vaccine Vials: <span class="font-bold">${(areaData.vaccineStock || 0).toLocaleString()}</span></div>` +
+      `<div>Unique Patients: <span class="font-bold">${(areaData.uniquePatients || 0).toLocaleString()}</span></div>`
+    );
+  }
+
   function drawChart() {
     if (!chartContainer || !geoJsonData) {
       console.warn(
@@ -303,10 +313,7 @@
             ("reg_name" in props ? props.reg_name : "Unknown Region");
           const regionHighRisk =
             highRiskBites.regionTotals[props.region_id] ?? 0;
-          const statsHtml = areaData
-            ? `<div>Vaccine Vials: <span class="font-bold">${(areaData.vaccineStock || 0).toLocaleString()}</span></div>` +
-              `<div>Unique Patients: <span class="font-bold">${(areaData.uniquePatients || 0).toLocaleString()}</span></div>`
-            : `<div>No vaccine/patient data</div>`;
+          const statsHtml = renderVaccinePatientStats(areaData);
 
           tooltip
             .html(
@@ -348,10 +355,7 @@
             ? d.properties.conc_nm
             : "Unknown District");
         const districtHighRisk = highRiskBites.districtTotals[districtId] ?? 0;
-        const districtStatsHtml = areaData
-          ? `<div>Vaccine Vials: <span class="font-bold">${(areaData.vaccineStock || 0).toLocaleString()}</span></div>` +
-            `<div>Unique Patients: <span class="font-bold">${(areaData.uniquePatients || 0).toLocaleString()}</span></div>`
-          : `<div>No vaccine/patient data</div>`;
+        const districtStatsHtml = renderVaccinePatientStats(areaData);
 
         tooltip
           .html(
