@@ -31,43 +31,6 @@ const EMPTY_HIGH_RISK_BITES_DATA = {
   districtTotals: {},
 };
 
-// Seeding the jitter by ward_id collapses a ward's cases to one point, so markers
-// can't be averaged back to the ward/village.
-const JITTER_RADIUS_KM = 7;
-const KM_PER_DEG_LAT = 111;
-
-function hashString(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function jitter(lng: number, lat: number, seed: number): [number, number] {
-  const rng = mulberry32(seed);
-  const angle = rng() * 2 * Math.PI;
-  // sqrt keeps the distribution uniform across the disc (not clustered at the centre).
-  const distKm = Math.sqrt(rng()) * JITTER_RADIUS_KM;
-  const dLat = (distKm * Math.cos(angle)) / KM_PER_DEG_LAT;
-  const dLng =
-    (distKm * Math.sin(angle)) /
-    (KM_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180));
-  return [lng + dLng, lat + dLat];
-}
-
 export const GET: RequestHandler = async ({ locals, fetch }) => {
   const session = await locals.auth();
   if (!session?.user?.email) {
@@ -141,7 +104,7 @@ export const GET: RequestHandler = async ({ locals, fetch }) => {
       seenWards.add(wardId);
       const point = wardPoints[wardId];
       if (!point) continue;
-      const [lng, lat] = jitter(point[0], point[1], hashString(wardId));
+      const [lng, lat] = point;
       wards.push({ lat, lng, regionId });
 
       if (districtId) {

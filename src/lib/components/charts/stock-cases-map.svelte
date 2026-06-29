@@ -443,7 +443,7 @@
         handleAreaClick(d);
       });
 
-    // No markers at ward level — keeps placement district-level anonymous.
+    // No markers once a district is selected (the ward map).
     const markerLayer = svg.append("g");
 
     const drawPins = (points: Array<{ lat: number; lng: number }>) =>

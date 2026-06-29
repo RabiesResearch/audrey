@@ -85,7 +85,7 @@ export async function fetchVaccineStock(
   }
 }
 
-// lat/lng are jittered to district precision, not exact locations.
+// lat/lng are ward centroids (per-district means at the overview), never a case's own location.
 export type HighRiskBitesData = {
   wards: { lat: number; lng: number; regionId: string }[];
   districtPoints: {
