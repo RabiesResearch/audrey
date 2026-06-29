@@ -1,7 +1,9 @@
 <script lang="ts">
   import {
     getAllRegionsAndDistricts,
+    getHighRiskBites,
     getPatientAndStockNumbers,
+    type HighRiskBitesData,
     type RegionCasesStockData,
   } from "$data/api";
   import LoadingSpinner from "$lib/components/ui/LoadingSpinner.svelte";
@@ -18,6 +20,12 @@
   import type { Feature, FeatureCollection } from "geojson";
 
   let data: RegionCasesStockData[] = [];
+  let highRiskBites: HighRiskBitesData = {
+    wards: [],
+    districtPoints: [],
+    regionTotals: {},
+    districtTotals: {},
+  };
   let geoJsonData: FeatureCollection | null = null;
   let chartContainer: HTMLDivElement | null = null;
   let resizeObserver: ResizeObserver | null = null;
@@ -163,8 +171,8 @@
     }
   }
 
-  // Reactive statement to redraw chart when container becomes available
-  $: if (chartContainer && geoJsonData && !isLoading) {
+  // highRiskBites is referenced so the redraw re-fires once markers load.
+  $: if (chartContainer && geoJsonData && !isLoading && highRiskBites) {
     console.debug("Chart container and data available, drawing chart");
     drawChart();
   }
@@ -172,6 +180,10 @@
   onMount(async () => {
     // Build the region/district map for lookups
     await buildRegionDistrictMap();
+
+    getHighRiskBites().then((bites) => {
+      highRiskBites = bites;
+    });
 
     let currentRegionID: string | null = null;
     let currentDistrictID: string | null = null;
@@ -216,6 +228,16 @@
     }
   }
 
+  function renderVaccinePatientStats(
+    areaData: RegionCasesStockData | undefined,
+  ): string {
+    if (!areaData) return `<div>No vaccine/patient data</div>`;
+    return (
+      `<div>Vaccine Vials: <span class="font-bold">${(areaData.vaccineStock || 0).toLocaleString()}</span></div>` +
+      `<div>Unique Patients: <span class="font-bold">${(areaData.uniquePatients || 0).toLocaleString()}</span></div>`
+    );
+  }
+
   function drawChart() {
     if (!chartContainer || !geoJsonData) {
       console.warn(
@@ -230,7 +252,10 @@
     const { width, height } = getChartDimensions();
 
     // D3 projection and path
-    const projection = d3.geoMercator().fitSize([width, height], geoJsonData);
+    const legendReservedHeight = 70;
+    const projection = d3
+      .geoMercator()
+      .fitSize([width, height - legendReservedHeight], geoJsonData);
     const path = d3.geoPath().projection(projection);
 
     // Color scale for vials - handle empty data case
@@ -283,31 +308,18 @@
           const props = d.properties;
           areaData = data.find((r) => r.regionID === props.region_id);
 
-          if (!areaData) {
-            tooltip
-              .html(
-                `<div><strong>${"reg_name" in props ? props.reg_name : "Unknown Region"}</strong></div>` +
-                  `<div>No data for this area</span></div>`,
-              )
-              .style("left", mouseX + 10 + "px")
-              .style("top", mouseY - 50 + "px")
-              .transition()
-              .duration(100)
-              .style("opacity", 1);
-            return;
-          }
-
           const regionName =
-            areaData.regionName ||
+            areaData?.regionName ||
             ("reg_name" in props ? props.reg_name : "Unknown Region");
-          const vaccineStock = areaData.vaccineStock || 0;
-          const uniquePatients = areaData.uniquePatients || 0;
+          const regionHighRisk =
+            highRiskBites.regionTotals[props.region_id] ?? 0;
+          const statsHtml = renderVaccinePatientStats(areaData);
 
           tooltip
             .html(
               `<div><strong>${regionName}</strong></div>` +
-                `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
-                `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`,
+                statsHtml +
+                `<div>High-risk bites: <span class="font-bold">${regionHighRisk.toLocaleString()}</span></div>`,
             )
             .style("left", mouseX + 10 + "px")
             .style("top", mouseY - 50 + "px")
@@ -329,39 +341,27 @@
         return;
       } else if ($selectedRegionID && !$selectedDistrictID) {
         // District view
-        if (d.properties && "concl_d" in d.properties && d.properties.concl_d) {
-          areaData = data.find(
-            (row) => row.districtID === d.properties!.concl_d,
-          );
-        }
-
-        if (!areaData) {
-          tooltip
-            .html(
-              `<div><strong>${d.properties && "conc_nm" in d.properties ? d.properties.conc_nm : "Unknown District"}</strong></div>` +
-                `<div>No data for this area</span></div>`,
-            )
-            .style("left", mouseX + 10 + "px")
-            .style("top", mouseY - 50 + "px")
-            .transition()
-            .duration(100)
-            .style("opacity", 1);
-          return;
+        const districtId =
+          d.properties && "concl_d" in d.properties
+            ? (d.properties.concl_d as string)
+            : "";
+        if (districtId) {
+          areaData = data.find((row) => row.districtID === districtId);
         }
 
         const districtName =
-          areaData.districtName ||
+          areaData?.districtName ||
           (d.properties && "conc_nm" in d.properties
             ? d.properties.conc_nm
             : "Unknown District");
-        const vaccineStock = areaData.vaccineStock || 0;
-        const uniquePatients = areaData.uniquePatients || 0;
+        const districtHighRisk = highRiskBites.districtTotals[districtId] ?? 0;
+        const districtStatsHtml = renderVaccinePatientStats(areaData);
 
         tooltip
           .html(
             `<div><strong>${districtName}</strong></div>` +
-              `<div>Vaccine Vials: <span class="font-bold">${vaccineStock.toLocaleString()}</span></div>` +
-              `<div>Unique Patients: <span class="font-bold">${uniquePatients.toLocaleString()}</span></div>`,
+              districtStatsHtml +
+              `<div>High-risk bites: <span class="font-bold">${districtHighRisk.toLocaleString()}</span></div>`,
           )
           .style("left", mouseX + 10 + "px")
           .style("top", mouseY - 50 + "px")
@@ -442,6 +442,31 @@
       .on("click", function (event, d: ExtendedFeature) {
         handleAreaClick(d);
       });
+
+    // No markers once a district is selected (the ward map).
+    const markerLayer = svg.append("g");
+
+    const drawPins = (points: Array<{ lat: number; lng: number }>) =>
+      markerLayer
+        .selectAll("text")
+        .data(points)
+        .enter()
+        .append("text")
+        .attr("x", (p) => projection([p.lng, p.lat])?.[0] ?? -9999)
+        .attr("y", (p) => projection([p.lng, p.lat])?.[1] ?? -9999)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "central")
+        .attr("font-size", "16px")
+        .attr("pointer-events", "none")
+        .text("📍");
+
+    if (!$selectedRegionID) {
+      drawPins(highRiskBites.districtPoints);
+    } else if (!$selectedDistrictID) {
+      drawPins(
+        highRiskBites.wards.filter((b) => b.regionId === $selectedRegionID),
+      );
+    }
 
     // Add a color legend
     const legendWidth = 200;

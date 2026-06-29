@@ -84,3 +84,62 @@ export async function fetchVaccineStock(
     return null; // unavailable → callers fail open
   }
 }
+
+// lat/lng are ward centroids (per-district means at the overview), never a case's own location.
+export type HighRiskBitesData = {
+  wards: { lat: number; lng: number; regionId: string }[];
+  districtPoints: {
+    lat: number;
+    lng: number;
+    regionId: string;
+    districtId: string;
+  }[];
+  regionTotals: Record<string, number>;
+  districtTotals: Record<string, number>;
+};
+
+const EMPTY_HIGH_RISK_BITES: HighRiskBitesData = {
+  wards: [],
+  districtPoints: [],
+  regionTotals: {},
+  districtTotals: {},
+};
+
+let highRiskBitesCache: {
+  data: HighRiskBitesData;
+  timestamp: number;
+} | null = null;
+const HIGH_RISK_BITES_CACHE_DURATION = 60 * 60 * 1000;
+
+export async function fetchHighRiskBites(
+  fetchFn?: typeof fetch,
+): Promise<HighRiskBitesData> {
+  const now = Date.now();
+  if (
+    highRiskBitesCache &&
+    now - highRiskBitesCache.timestamp < HIGH_RISK_BITES_CACHE_DURATION
+  ) {
+    return highRiskBitesCache.data;
+  }
+
+  try {
+    const _fetch = fetchFn || fetch;
+    const response = await _fetch("/api/high-risk-bites");
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || "Failed to fetch high-risk bites");
+    }
+
+    highRiskBitesCache = { data: result.data, timestamp: now };
+    return result.data;
+  } catch (error) {
+    console.error("[API] High-risk bites request error:", error);
+    return EMPTY_HIGH_RISK_BITES;
+  }
+}
